@@ -1,0 +1,29 @@
+# Middleware Folder Documentation
+
+## Overview
+This folder contains middleware components for the EduConnect application's presentation layer. Middleware functions handle cross-cutting concerns such as authentication, logging, error handling, and request/response processing.
+
+## Purpose
+Middleware components intercept HTTP requests and responses, enabling:
+- Request validation and authentication
+- Logging and monitoring
+- Error handling and transformation
+- CORS and security headers
+- Request body parsing and transformation
+
+## Structure
+- Each middleware file should be self-contained and follow the naming convention: `[name].middleware.ts`
+- Middleware functions should export a function that returns an Express middleware handler
+- Follow the pattern: `(req, res, next) => { ... }`
+
+## Usage
+Import and apply middleware in route handlers or globally in the application setup:
+```typescript
+app.use(middlewareName);
+```
+
+## Best Practices
+- Keep middleware focused on a single responsibility
+- Add proper error handling and logging
+- Use TypeScript for type safety
+- Document middleware parameters and behavior

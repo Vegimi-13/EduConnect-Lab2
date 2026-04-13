@@ -1,0 +1,9 @@
+Services Folder - Business Layer
+============
+
+This folder will contain functional service implementations for the EduConnect business logic layer.
+
+
+Each service will encapsulate business logic, validation, and data operations while maintaining separation of concerns from controllers and data access layers.
+
+

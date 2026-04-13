@@ -1,0 +1,15 @@
+# Mappers Folder
+
+## Overview
+This folder contains data mapper classes responsible for converting between domain entities and database models.
+
+## Purpose
+- **Entity-to-DTO Mapping**: Transforms domain entities into Data Transfer Objects for API responses
+- **DTO-to-Entity Mapping**: Converts incoming Data Transfer Objects into domain entities for business logic
+- **Database Model Mapping**: Handles conversion between ORM models and domain objects
+
+## Contents
+Mapper classes follow naming conventions: `[EntityName]Mapper.cs`
+
+## Usage
+Mappers are typically used in repository layers and service classes to maintain separation of concerns between data access and business logic layers.
