@@ -1,4 +1,11 @@
-// This file will instantiate and export Prisma client instances
-// for database connectivity and ORM operations in the backend application.
-// It handles the initialization and configuration of Prisma clients
-// to interact with the database through TypeScript models.
+import { PrismaClient } from '@prisma/client';
+import { config } from '../config/env';
+
+export const prisma = new PrismaClient({
+    datasources: {
+        db: {
+            url: config.database.url,
+        },
+    },
+    log: ['query', 'info', 'warn', 'error'], 
+});

@@ -1,3 +1,0 @@
-// This folder contains WebSocket / Socket.IO real-time communication logic.
-// It manages socket server initialization, event handlers, rooms, and live event broadcasting.
-// Used for features such as chat messaging, presence/online status, and real-time notifications.

@@ -22,3 +22,9 @@ npm-debug.log*
 
 # Docker volumes / overrides (optional)
 docker-data/
+
+# PNPM lock file (if using PNPM)
+pnpm-lock.yaml
+
+src/database/src/generated/prisma
+/src/generated/prisma
