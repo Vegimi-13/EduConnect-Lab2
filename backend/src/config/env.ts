@@ -10,6 +10,9 @@ export const config = {
     database: {
         url: process.env.DATABASE_URL,
     },
+    security: {
+        dummy_hash: process.env.DUMMY_HASH,
+    },
     server: {
         port: Number(process.env.PORT),
     },
