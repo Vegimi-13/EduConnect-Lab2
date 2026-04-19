@@ -5,9 +5,17 @@
 
 generator client {
   provider = "prisma-client-js"
-  output   = "../src/generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+//testing purposes
+model Test {
+  id   Int    @id @default(autoincrement())
+  name String
 }
