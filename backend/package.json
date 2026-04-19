@@ -1,35 +1,45 @@
 {
-	"dependencies": {
-		"@prisma/client": "^6.19.3",
-		"@types/cors": "^2.8.19",
-		"@types/express": "^5.0.6",
-		"backend": "link:",
-		"bcryptjs": "^3.0.3",
-		"cookie-parser": "^1.4.7",
-		"cors": "^2.8.6",
-		"dotenv": "^17.4.2",
-		"express": "^5.2.1",
-		"jsonwebtoken": "^9.0.3",
-		"prisma": "^6.19.3",
-		"socket.io": "^4.8.3",
-		"zod": "^4.3.6"
-	},
-	"prisma": {
-		"schema": "src/database/prisma/schema.prisma"
-	},
-	"scripts": {
-		"dev": "nodemon src/app.ts",
-		"build": "tsc",
-		"start": "node dist/app.js"
-	},
-	"devDependencies": {
-		"@types/bcryptjs": "^3.0.0",
-		"@types/cookie-parser": "^1.4.10",
-		"@types/jsonwebtoken": "^9.0.10",
-		"@types/node": "^25.6.0",
-		"@types/socket.io": "^3.0.2",
-		"nodemon": "^3.1.14",
-		"ts-node": "^10.9.2",
-		"typescript": "^6.0.3"
-	}
+  "dependencies": {
+    "@prisma/client": "^6.19.3",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "backend": "link:",
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "prisma": "^6.19.3",
+    "socket.io": "^4.8.3",
+    "zod": "^4.3.6"
+  },
+  "prisma": {
+    "schema": "src/database/prisma/schema.prisma"
+  },
+  "scripts": {
+    "dev": "nodemon src/app.ts",
+    "build": "tsc",
+    "start": "node dist/app.js",
+
+    "db:up": "docker compose up -d",
+    "db:down": "docker compose down",
+    "db:reset": "docker compose down -v && docker compose up -d",
+		
+    "prisma:generate": "prisma generate --schema=src/database/prisma/schema.prisma",
+    "prisma:migrate": "prisma migrate dev --schema=src/database/prisma/schema.prisma",
+    "prisma:reset": "prisma migrate reset --schema=src/database/prisma/schema.prisma",
+    "prisma:push": "prisma db push --schema=src/database/prisma/schema.prisma",
+    "prisma:studio": "prisma studio --schema=src/database/prisma/schema.prisma"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^3.0.0",
+    "@types/cookie-parser": "^1.4.10",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/node": "^25.6.0",
+    "@types/socket.io": "^3.0.2",
+    "nodemon": "^3.1.14",
+    "ts-node": "^10.9.2",
+    "typescript": "^6.0.3"
+  }
 }
