@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 export const LoginDto = z.object({
-    email: z.string().email(),
+    email: z.string(),
     password: z.string().min(8).max(100),
 });
 
