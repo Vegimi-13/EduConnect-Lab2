@@ -2,8 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
-import { config } from './config/env'
+import { config } from './config/env';
 import authRoutes from './presentation/routes/auth.routes';
+import { prisma } from './database/prismaClients';
 
 dotenv.config();
 
@@ -21,5 +22,25 @@ app.use(cors({
 
 app.use('/api/auth', authRoutes);
 
+// TEST ROUTE FOR PRISMA
+app.get('/api/test-db', async (_req, res) => {
+    try {
+        const users = await prisma.user.findMany();
 
-export default app
+        res.status(200).json({
+            success: true,
+            message: 'Prisma is working',
+            count: users.length,
+            data: users,
+        });
+    } catch (error) {
+        console.error('DB ERROR:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Database connection failed',
+            error,
+        });
+    }
+});
+
+export default app;
