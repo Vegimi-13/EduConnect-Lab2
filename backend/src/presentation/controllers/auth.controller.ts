@@ -1,6 +1,6 @@
-import { get } from "node:http";
 import authService from "../../business/services/auth.service";
 import { Request, Response, NextFunction } from "express";
+import { config } from "../../config/env";
 
 export function getClientIp(req: any): string {
   const forwarded = req.headers["x-forwarded-for"];
@@ -16,13 +16,22 @@ export function getClientIp(req: any): string {
   return req.socket?.remoteAddress || "unknown";
 }
 
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict' as const,
+    path: '/', 
+}
+
 const authController = {
     async register(req: Request, res: Response, next: NextFunction) {
         try {
             const ip = getClientIp(req);
             const result = await authService.register(req.body, ip);
-            res.status(201).json(result);
 
+            res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: config.jwt.refresh_expiry as number * 1000 });
+            res.cookie('accessToken', result.accessToken, { ...cookieOptions, maxAge: config.jwt.access_expiry as number * 1000 });
+            res.status(201).json(result);
         } catch (error) {
             next(error);
         }
@@ -32,6 +41,9 @@ const authController = {
         try {
             const ip = getClientIp(req);
             const result = await authService.login(req.body, ip);
+
+            res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: config.jwt.refresh_expiry as number * 1000 });
+            res.cookie('accessToken', result.accessToken, { ...cookieOptions, maxAge: config.jwt.access_expiry as number * 1000 });
             res.status(200).json(result);
         } catch (error) {
             next(error);
@@ -52,6 +64,8 @@ const authController = {
         try {
             const ip = getClientIp(req);
             await authService.logout(req.body.refreshToken, ip);
+            res.clearCookie('refreshToken', cookieOptions);
+            res.clearCookie('accessToken', cookieOptions);
             res.status(200).json({ message: 'Logged out successfully' });
         } catch (error) {
             next(error);

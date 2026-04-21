@@ -20,7 +20,7 @@ export const config = {
         access_secret: process.env.ACCESS_TOKEN_SECRET,
         refresh_secret: process.env.REFRESH_TOKEN_SECRET,
         access_expiry: Number(process.env.ACCESS_TOKEN_EXPIRATION),
-        refresh_expiry: Number(process.env.REFRESH_TOKEN_EXPIRATION),
+        refresh_expiry: Number(process.env.REFRESH_TOKEN_EXPIRATION),    
     },
     bcrypt: {
         salt_rounds: Number(process.env.BCRYPT_SALT_ROUNDS),
