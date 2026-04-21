@@ -1,37 +1,36 @@
 import { prisma } from '../../database/prismaClients';
+interface CreateRefreshTokenData {
+    user_id: number;
+    token_hash: string;
+    expires_at?: Date;
+}
 
 const refreshTokenRepository = {
-
     // Creates a new refresh token for a user, storing the hashed token and its expiration time in the database.
-    async create(data: {
-        user_id: string;
-        token_hash: string;
-        expires_at?: Date;
-    }) {
+    async create(data: CreateRefreshTokenData) {
         return await prisma.refreshToken.create({
             data: {
                 user_id: data.user_id,
                 token_hash: data.token_hash,
-                expires_at: data.expires_at,
+                expires_at: data.expires_at ?? new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
             },
         });
     },
 
-    // Finds a refresh token in the database by its hashed value, allowing for token validation during authentication.
+    // Finds a refresh token in the database by its hashed value.
     async findByTokenHash(token_hash: string) {
-        return await prisma.refreshToken.findUnique({
-            where: {token_hash},
-        })
+        return await prisma.refreshToken.findFirst({
+            where: { token_hash },
+        });
     },
 
-    // Revokes a refresh token by setting its revoked_at timestamp to the current date and time.
-    async revokeToken(id: string) {
+    // Revokes a refresh token by setting revoked_at.
+    async revokeToken(id: number) {
         return await prisma.refreshToken.update({
             where: { id },
             data: { revoked_at: new Date() },
         });
     },
-
 };
 
 export default refreshTokenRepository;

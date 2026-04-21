@@ -1,24 +1,28 @@
 import { prisma } from '../../database/prismaClients';
 
 const userRepository = {
-
-    // Finds a user in the database by their email address, allowing for user authentication and retrieval of user details.
+    // Finds a user in the database by their email address.
     async findByEmail(email: string) {
-        return await prisma.users.findUnique({
+        return await prisma.user.findUnique({
             where: { email },
         });
     },
 
-    // Finds a user in the database by their unique identifier, useful for retrieving user details or performing user-specific operations.
-    async findById(id: string) {
-        return await prisma.users.findUnique({
+    // Finds a user in the database by their unique identifier.
+    async findById(id: number) {
+        return await prisma.user.findUnique({
             where: { id },
         });
     },
 
-    // Creates a new user in the database with the provided first name, last name, email, and hashed password, returning the created user record.
-    async create(first_name: string, last_name: string, email: string, password_hash: string) {
-        return await prisma.users.create({
+    // Creates a new user in the database.
+    async create(
+        first_name: string,
+        last_name: string,
+        email: string,
+        password_hash: string
+    ) {
+        return await prisma.user.create({
             data: {
                 first_name,
                 last_name,
@@ -27,7 +31,6 @@ const userRepository = {
             },
         });
     },
-
 };
 
 export default userRepository;
