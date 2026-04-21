@@ -7,8 +7,10 @@
     "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
+    "prisma": "^6.19.3",
     "socket.io": "^4.8.3",
     "zod": "^4.3.6"
   },
@@ -16,12 +18,14 @@
     "schema": "src/database/prisma/schema.prisma"
   },
   "scripts": {
-    "dev": "nodemon --exec ts-node src/server.ts",
+    "dev": "nodemon src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
+
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:reset": "docker compose down -v && docker compose up -d",
+		
     "prisma:generate": "prisma generate --schema=src/database/prisma/schema.prisma",
     "prisma:migrate": "prisma migrate dev --schema=src/database/prisma/schema.prisma",
     "prisma:reset": "prisma migrate reset --schema=src/database/prisma/schema.prisma",
@@ -34,9 +38,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^25.6.0",
     "@types/socket.io": "^3.0.2",
-    "dotenv": "^17.4.2",
     "nodemon": "^3.1.14",
-    "prisma": "^6.19.3",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3"
   }
