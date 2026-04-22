@@ -18,9 +18,9 @@ const refreshTokenRepository = {
     },
 
     // Finds a refresh token in the database by its hashed value.
-    async findByTokenHash(token_hash: string) {
-        return await prisma.refreshToken.findFirst({
-            where: { token_hash },
+    async findByUserId(user_id: number) {
+        return await prisma.refreshToken.findMany({
+            where: { user_id, revoked_at: null },
         });
     },
 

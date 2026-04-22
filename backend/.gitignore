@@ -26,5 +26,5 @@ docker-data/
 # PNPM lock file (if using PNPM)
 pnpm-lock.yaml
 
-src/database/src/generated/prisma
-/src/generated/prisma
+# Database Generated folder
+src/database/generated/*

@@ -1,6 +1,5 @@
 import authService from "../../business/services/auth.service";
 import { Request, Response, NextFunction } from "express";
-import { config } from "../../config/env";
 
 export function getClientIp(req: any): string {
   const forwarded = req.headers["x-forwarded-for"];
@@ -28,10 +27,14 @@ const authController = {
         try {
             const ip = getClientIp(req);
             const result = await authService.register(req.body, ip);
+            const cleanedResult = {
+                user: result.user,
+                accessToken: result.accessToken,
+            }
 
-            res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: config.jwt.refresh_expiry as number * 1000 });
-            res.cookie('accessToken', result.accessToken, { ...cookieOptions, maxAge: config.jwt.access_expiry as number * 1000 });
-            res.status(201).json(result);
+            res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); 
+            res.cookie('accessToken', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); 
+            res.status(201).json(cleanedResult);
         } catch (error) {
             next(error);
         }
@@ -41,10 +44,14 @@ const authController = {
         try {
             const ip = getClientIp(req);
             const result = await authService.login(req.body, ip);
+            const cleanedResult = {
+                user: result.user,
+                accessToken: result.accessToken,
+            }
 
-            res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: config.jwt.refresh_expiry as number * 1000 });
-            res.cookie('accessToken', result.accessToken, { ...cookieOptions, maxAge: config.jwt.access_expiry as number * 1000 });
-            res.status(200).json(result);
+            res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); 
+            res.cookie('accessToken', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 }); 
+            res.status(200).json(cleanedResult);
         } catch (error) {
             next(error);
         }
@@ -53,8 +60,11 @@ const authController = {
     async refreshToken(req: Request, res: Response, next: NextFunction) {
         try {
             const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
-            const result = await authService.refresh(req.body.refreshToken);
-            res.status(200).json(result);
+            const result = await authService.refresh(req.cookies.refreshToken);
+            res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); 
+            res.cookie('accessToken', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 })
+        
+            res.status(200).json({ message: 'Token refreshed successfully' });
         } catch (error) {
             next(error);
         }
@@ -63,7 +73,7 @@ const authController = {
     async logout(req: Request, res: Response, next: NextFunction) {
         try {
             const ip = getClientIp(req);
-            await authService.logout(req.body.refreshToken, ip);
+            await authService.logout(req.cookies.refreshToken, ip);
             res.clearCookie('refreshToken', cookieOptions);
             res.clearCookie('accessToken', cookieOptions);
             res.status(200).json({ message: 'Logged out successfully' });

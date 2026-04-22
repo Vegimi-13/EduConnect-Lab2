@@ -65,7 +65,7 @@ const authService = {
                 email: userCreated.email,
             },
             accessToken,
-            refreshToken,
+            refreshToken
         };
     },
 
@@ -109,14 +109,19 @@ const authService = {
                 email: userExists.email,
             },
             accessToken,
-            refreshToken,
+            refreshToken
         };
     },
 
     async logout(refreshToken: string, ip: string) {
-        const tokenRecord = await refreshTokenRepository.findByTokenHash(
-            await bcrypt.hash(refreshToken, config.bcrypt.salt_rounds)
-        );
+        const decoded = jwtService.verifyRefreshToken(refreshToken);
+
+        const tokens = await refreshTokenRepository.findByUserId(decoded.userId);
+        const tokenRecord = await Promise.all(
+        tokens.map(async (record) => {
+            const match = await bcrypt.compare(refreshToken, record.token_hash);
+            return match ? record : null;
+        })).then(results => results.find(r => r !== null));
 
         if (!tokenRecord) throw new Error('Invalid refresh token');
 
@@ -134,9 +139,14 @@ const authService = {
     },
 
     async refresh(refreshToken: string) {
-        const tokenRecord = await refreshTokenRepository.findByTokenHash(
-            await bcrypt.hash(refreshToken, config.bcrypt.salt_rounds)
-        );
+        const decoded = jwtService.verifyRefreshToken(refreshToken);
+        const tokens = await refreshTokenRepository.findByUserId(decoded.userId);
+
+        const tokenRecord = await Promise.all(
+        tokens.map(async (record) => {
+            const match = await bcrypt.compare(refreshToken, record.token_hash);
+            return match ? record : null;
+        })).then(results => results.find(r => r !== null));
 
         if (!tokenRecord) throw new Error('Invalid refresh token');
 
@@ -154,6 +164,8 @@ const authService = {
         });
 
         const new_token_hash = await bcrypt.hash(newRefreshToken, config.bcrypt.salt_rounds);
+
+        await refreshTokenRepository.revokeToken(tokenRecord.id);
 
         await refreshTokenRepository.create({
             user_id: user.id,
