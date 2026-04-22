@@ -27,4 +27,4 @@ docker-data/
 pnpm-lock.yaml
 
 # Database Generated folder
-src/database/generated/*
+src/database/generated/*/src/database/generated

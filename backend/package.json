@@ -18,7 +18,7 @@
     "schema": "src/database/prisma/schema.prisma"
   },
   "scripts": {
-    "dev": "nodemon src/app.ts",
+    "dev": "nodemon src/server.ts",
     "build": "tsc",
     "start": "node dist/app.js",
 
