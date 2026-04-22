@@ -28,3 +28,4 @@ pnpm-lock.yaml
 
 src/database/src/generated/prisma
 /src/generated/prisma
+/src/database/generated
