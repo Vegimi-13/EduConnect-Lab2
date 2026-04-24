@@ -1,14 +1,20 @@
 import { Request, Response, NextFunction } from 'express';
 import jwtService from '../../business/services/jwt.service';
 
-export interface AuthRequest extends Request {
-    user?: {
+export {};
+
+declare global {
+  namespace Express {
+    interface Request {
+      user: {
         userId: number;
         email: string;
-    };
+      };
+    }
+  }
 }
 
-export const authenticate = (req: AuthRequest, res: Response, next: NextFunction): void => {
+export const authenticate = (req: Request, res: Response, next: NextFunction): void => {
     const token = req.cookies?.accessToken;
 
     if (!token) {
