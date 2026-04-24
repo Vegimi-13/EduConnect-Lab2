@@ -1,31 +1,31 @@
 import { z } from 'zod';
 
-// ─── Base Schema (Single Source of Truth) ─────────────────────────────────────
-
+// Base schema aligned with DB
 const BaseEducationSchema = z.object({
     institution_id: z.number(),
     field_id: z.number(),
     degree: z.string().max(100),
-    start_date: z.coerce.date(),
-    end_date: z.coerce.date().optional().nullable(),
-    description: z.string().max(500).optional().nullable(),
+    start_year: z.number(),
+    end_year: z.number().nullable().optional(),
+    description: z.string().max(500).nullable().optional(),
 });
 
-// ─── CreateEducationDto ───────────────────────────────────────────────────────────────
-
+// Create
 export const CreateEducationDto = BaseEducationSchema;
-export type CreateEducationDtoType = z.infer<typeof CreateEducationDto>;
 
-// ─── UpdateEducationDto ───────────────────────────────────────────────────────────────
-
+// Update
 export const UpdateEducationDto = BaseEducationSchema.partial();
-export type UpdateEducationDtoType = z.infer<typeof UpdateEducationDto>;
 
-
-// ─── EducationResponseDto ─────────────────────────────────────────────────────────────
-
+// Response (joined data)
 export const EducationResponseDto = BaseEducationSchema.extend({
     id: z.number(),
     institution_name: z.string(),
+    field_name: z.string(),
 });
+
+// List
+export const EducationListResponseDto = z.array(EducationResponseDto);
+
+export type CreateEducationDtoType = z.infer<typeof CreateEducationDto>;
+export type UpdateEducationDtoType = z.infer<typeof UpdateEducationDto>;
 export type EducationResponseDtoType = z.infer<typeof EducationResponseDto>;
