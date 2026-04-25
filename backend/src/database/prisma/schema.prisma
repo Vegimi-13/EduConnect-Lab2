@@ -352,6 +352,7 @@ model Reaction {
   created_at     DateTime  @default(now())
 
   user           User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  @@unique([user_id, target_type, target_id])
 
   @@map("reactions")
 }

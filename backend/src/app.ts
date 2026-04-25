@@ -6,7 +6,7 @@ import { config } from './config/env';
 import authRoutes from './presentation/routes/auth.routes';
 import profileRoutes from './presentation/routes/profile.routes';
 import { prisma } from './database/prismaClients';
-
+import reactionsRoutes from "./presentation/routes/reactions.routes";
 dotenv.config();
 
 // Initialize Express app
@@ -23,26 +23,27 @@ app.use(cors({
 
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use("/api/reactions", reactionsRoutes);
 
 // TEST ROUTE FOR PRISMA
 app.get('/api/test-db', async (_req, res) => {
-    try {
-        const users = await prisma.user.findMany();
+  try {
+    const users = await prisma.user.findMany();
 
-        res.status(200).json({
-            success: true,
+    res.status(200).json({
+      success: true,
             message: 'Prisma is working',
-            count: users.length,
-            data: users,
-        });
-    } catch (error) {
+      count: users.length,
+      data: users,
+    });
+  } catch (error) {
         console.error('DB ERROR:', error);
-        res.status(500).json({
-            success: false,
+    res.status(500).json({
+      success: false,
             message: 'Database connection failed',
-            error,
-        });
-    }
+      error,
+    });
+  }
 });
 
 export default app;
