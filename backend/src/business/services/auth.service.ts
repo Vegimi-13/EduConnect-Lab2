@@ -1,6 +1,7 @@
 import userRepository from "../../persistence/repositories/user.repository";
 import userRoleRepository from "../../persistence/repositories/userRoles.repository";
 import roleRepository from "../../persistence/repositories/role.repository";
+import profileRepository from "../../persistence/repositories/profile.repository";
 import refreshTokenRepository from "../../persistence/repositories/refreshToken.repository";
 import auditLogsRepository from "../../persistence/repositories/auditLogs.repository";
 
@@ -31,6 +32,7 @@ const authService = {
         }
 
         await userRoleRepository.assignRole(userCreated.id, defaultRole.id);
+        await profileRepository.createProfile(userCreated.id);
 
         const accessToken = jwtService.generateAccessToken({
             userId: userCreated.id,

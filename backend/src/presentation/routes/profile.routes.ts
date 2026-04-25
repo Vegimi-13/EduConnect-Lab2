@@ -6,6 +6,10 @@ const router = Router();
 
 // ─── Profile ──────────────────────────────────────────────────────────────
 
+router.get("/courses", profileController.getAllCourses);
+router.get("/institutions", profileController.getAllInstitutions);
+router.get("/fields", profileController.getAllFieldsOfStudy);
+
 router.get("/me", authenticate, profileController.getMyProfile);
 router.get("/:userId", authenticate, profileController.getProfileById);
 router.put("/me", authenticate, profileController.updateProfile);
@@ -23,14 +27,10 @@ router.delete("/education/:education_id", authenticate, profileController.delete
 
 // ─── Courses ──────────────────────────────────────────────────────────────
 
-router.get("/courses", profileController.getAllCourses);
-
 router.post("/courses", authenticate, profileController.addCourse);
 router.delete("/courses/:course_id", authenticate, profileController.removeCourse);
 
 // ─── Reference Data ───────────────────────────────────────────────────────
 
-router.get("/institutions", profileController.getAllInstitutions);
-router.get("/fields", profileController.getAllFieldsOfStudy);
 
 export default router;

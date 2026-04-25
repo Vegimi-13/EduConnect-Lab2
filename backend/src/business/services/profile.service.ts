@@ -29,6 +29,11 @@ const profileService = {
             courseRepository.findByUserId(user_id),
         ]);
 
+        const formattedSkills = skills.map(s => ({
+            id: s.skill.id,
+            name: s.skill.name,
+        }));
+
         return {
             user_id:     user.id,
             first_name:  user.first_name,
@@ -39,7 +44,7 @@ const profileService = {
             location:    profile.location,
             website_url: profile.website_url,
             visibility:  profile.visibility,
-            skills,
+            skills:      formattedSkills,
             education,
             courses,
         };
@@ -55,10 +60,19 @@ const profileService = {
     // ─── Skills ───────────────────────────────────────────────────────────────
 
     async addSkill(user_id: number, data: AddUserSkillDtoType) {
-        const alreadyAdded = await skillsRepository.userHasSkill(user_id, data.skill_id);
+        let skill_id = data.skill_id;
+
+        if (!skill_id && data.name) {
+            const existing = await skillsRepository.findByName(data.name);
+            skill_id = existing?.id ?? (await skillsRepository.create(data.name)).id;
+        }
+
+        if (!skill_id) throw new Error('Skill ID is required');
+
+        const alreadyAdded = await skillsRepository.userHasSkill(user_id, skill_id);
         if (alreadyAdded) throw new Error('Skill already added to profile');
 
-        return await skillsRepository.addSkillToUser(user_id, data.skill_id);
+        return await skillsRepository.addSkillToUser(user_id, skill_id);
     },
 
     async removeSkill(user_id: number, skill_id: number) {

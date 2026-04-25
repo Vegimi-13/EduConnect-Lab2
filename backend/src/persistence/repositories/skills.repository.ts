@@ -1,6 +1,21 @@
 import { prisma } from '../../database/prismaClients';
 
 const skillsRepository = {
+
+    async create(name: string) {
+        return await prisma.skill.create({
+            data: {
+                name,
+            },
+        });
+    },
+
+    async findByName(name: string) {
+        return await prisma.skill.findUnique({
+            where: { name },
+        });
+    },
+    
     async userHasSkill(user_id: number, skill_id: number) {
         const userSkill = await prisma.userSkill.findUnique({
             where: {
@@ -22,7 +37,8 @@ const skillsRepository = {
     },
     async findByUserId(user_id: number) {
         return await prisma.userSkill.findMany({
-            where: { user_id}
+            where: { user_id},
+            include: { skill: true },
         })
     },
     async removeSkillFromUser(user_id: number, skill_id: number) {

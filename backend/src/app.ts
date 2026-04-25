@@ -22,7 +22,7 @@ app.use(cors({
 }));
 
 app.use('/api/auth', authRoutes);
-app.use('api/profile', profileRoutes);
+app.use('/api/profile', profileRoutes);
 
 // TEST ROUTE FOR PRISMA
 app.get('/api/test-db', async (_req, res) => {
