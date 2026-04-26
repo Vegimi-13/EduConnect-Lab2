@@ -41,3 +41,6 @@ router.delete(
 
   postController.deletePost,
 );
+
+
+export default router;

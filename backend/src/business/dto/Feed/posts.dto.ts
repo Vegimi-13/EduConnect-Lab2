@@ -18,7 +18,7 @@ export const CreatePostDto = z.object({
     return true;
   },
   {
-    message:"Invalid post data based on post type";
+    message:"Invalid post data based on post type"
   }
   
 );
