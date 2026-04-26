@@ -30,6 +30,7 @@ app.use(
 app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/reactions", reactionsRoutes);
+app.use('/api/conversations', messagingRoutes);
 app.use("/api/follow", followRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/groups", groupRoutes);
