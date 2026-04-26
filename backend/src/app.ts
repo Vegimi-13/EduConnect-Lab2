@@ -11,6 +11,7 @@ import followRoutes from "./presentation/routes/follow.routes";
 import postRoutes from "./presentation/routes/FeedRoutes/posts.routes";
 import groupRoutes from "./presentation/routes/group.routes";
 import commentRoutes from "./presentation/routes/FeedRoutes/comments.routes";
+import messagingRoutes from './presentation/routes/message.routes'; 
 dotenv.config();
 
 // Initialize Express app
