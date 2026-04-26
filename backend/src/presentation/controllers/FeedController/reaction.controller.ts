@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import reactionService from "../../business/services/reaction.service";
+import reactionService from "../../../business/services/reaction.service";
 
 const reactionController = {
   async addReaction(req: Request, res: Response, next: NextFunction) {

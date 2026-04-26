@@ -1,16 +1,16 @@
-import express from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import dotenv from 'dotenv';
-import { config } from './config/env';
-import authRoutes from './presentation/routes/auth.routes';
-import profileRoutes from './presentation/routes/profile.routes';
-import messagingRoutes from './presentation/routes/message.routes';
-import { prisma } from './database/prismaClients';
-import reactionsRoutes from "./presentation/routes/reactions.routes";
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import dotenv from "dotenv";
+import { config } from "./config/env";
+import authRoutes from "./presentation/routes/auth.routes";
+import profileRoutes from "./presentation/routes/profile.routes";
+import { prisma } from "./database/prismaClients";
+import reactionsRoutes from "./presentation/routes/FeedRoutes/reactions.routes";
 import followRoutes from "./presentation/routes/follow.routes";
-import postRoutes from "./presentation/routes/FeedRoutes/posts.routes"
+import postRoutes from "./presentation/routes/FeedRoutes/posts.routes";
 import groupRoutes from "./presentation/routes/group.routes";
+import commentRoutes from "./presentation/routes/FeedRoutes/comments.routes";
 dotenv.config();
 
 // Initialize Express app
@@ -20,35 +20,38 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
-app.use(cors({
+app.use(
+  cors({
     origin: config.cors.origin,
     credentials: true,
-}));
+  }),
+);
 
-app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/profile", profileRoutes);
 app.use("/api/reactions", reactionsRoutes);
 app.use('/api/conversations', messagingRoutes);
 app.use("/api/follow", followRoutes);
-app.use("/api/posts", postRoutes)
+app.use("/api/posts", postRoutes);
 app.use("/api/groups", groupRoutes);
+app.use("/api", commentRoutes)
 
 // TEST ROUTE FOR PRISMA
-app.get('/api/test-db', async (_req, res) => {
+app.get("/api/test-db", async (_req, res) => {
   try {
     const users = await prisma.user.findMany();
 
     res.status(200).json({
       success: true,
-            message: 'Prisma is working',
+      message: "Prisma is working",
       count: users.length,
       data: users,
     });
   } catch (error) {
-        console.error('DB ERROR:', error);
+    console.error("DB ERROR:", error);
     res.status(500).json({
       success: false,
-            message: 'Database connection failed',
+      message: "Database connection failed",
       error,
     });
   }
