@@ -1,5 +1,5 @@
-import { prisma } from "../../database/prismaClients";
-import type { TargetType, ReactionType } from "../../shared/constants/enum";
+import { prisma } from "../../../database/prismaClients";
+import type { TargetType, ReactionType } from "../../../shared/constants/enum";
 
 interface CreateReactionData {
   target_type: TargetType;
