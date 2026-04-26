@@ -269,12 +269,17 @@ model UserCourse {
 model Follow {
   follower_id   Int
   following_id  Int
+  status        String   @default("pending")
   created_at    DateTime @default(now())
+  updated_at    DateTime?
 
   follower      User @relation("UserFollowing", fields: [follower_id], references: [id], onDelete: Cascade)
   following     User @relation("UserFollowers", fields: [following_id], references: [id], onDelete: Cascade)
 
   @@id([follower_id, following_id])
+  @@index([follower_id])
+  @@index([following_id])
+  @@index([status])
   @@map("follows")
 }
 
