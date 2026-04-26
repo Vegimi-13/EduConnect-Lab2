@@ -13,6 +13,15 @@ const followRepository = {
     });
   },
 
+  async findUserWithProfile(userId: number) {
+    return prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        profile: true,
+      },
+    });
+  },
+
   async findFollow(followerId: number, followingId: number) {
     return prisma.follow.findUnique({
       where: {
@@ -24,12 +33,16 @@ const followRepository = {
     });
   },
 
-  async createFollowRequest(followerId: number, followingId: number) {
+  async createFollowRequest(
+    followerId: number,
+    followingId: number,
+    status: string,
+  ) {
     return prisma.follow.create({
       data: {
         follower_id: followerId,
         following_id: followingId,
-        status: "pending",
+        status,
       },
     });
   },

@@ -6,7 +6,7 @@ const followService = {
       throw new Error("You cannot send a follow request to yourself");
     }
 
-    const targetUser = await followRepository.findUserById(targetUserId);
+    const targetUser = await followRepository.findUserWithProfile(targetUserId);
 
     if (!targetUser) {
       throw new Error("User not found");
@@ -18,10 +18,22 @@ const followService = {
     );
 
     if (existingFollow) {
-      throw new Error(`Follow request already exists with status: ${existingFollow.status}`);
+      throw new Error(
+        `Follow request already exists with status: ${existingFollow.status}`,
+      );
     }
 
-    return followRepository.createFollowRequest(currentUserId, targetUserId);
+    // 🔥 CHECK VISIBILITY
+    const status =
+      targetUser.profile?.visibility === "public"
+        ? "accepted"
+        : "pending";
+
+    return followRepository.createFollowRequest(
+      currentUserId,
+      targetUserId,
+      status,
+    );
   },
 
   async removeFollow(currentUserId: number, targetUserId: number) {
