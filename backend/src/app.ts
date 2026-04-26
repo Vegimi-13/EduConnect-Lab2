@@ -5,6 +5,7 @@ import dotenv from 'dotenv';
 import { config } from './config/env';
 import authRoutes from './presentation/routes/auth.routes';
 import profileRoutes from './presentation/routes/profile.routes';
+import messagingRoutes from './presentation/routes/message.routes';
 import { prisma } from './database/prismaClients';
 import reactionsRoutes from "./presentation/routes/reactions.routes";
 dotenv.config();
@@ -24,6 +25,7 @@ app.use(cors({
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
 app.use("/api/reactions", reactionsRoutes);
+app.use('/api/conversations', messagingRoutes);
 
 // TEST ROUTE FOR PRISMA
 app.get('/api/test-db', async (_req, res) => {
