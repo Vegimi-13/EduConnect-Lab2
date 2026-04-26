@@ -1,4 +1,4 @@
-import reactionRepository from "../../persistence/repositories/reaction.repository";
+import reactionRepository from "../../persistence/repositories/FeedRepositories/reaction.repository";
 import { ReactionCreateDtoType } from "../dto/Feed/reactions.dto";
 
 const reactionService = {
