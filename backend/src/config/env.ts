@@ -16,6 +16,10 @@ export const config = {
     server: {
         port: Number(process.env.PORT),
     },
+    redis: {
+        host: process.env.REDIS_HOST,
+        port: Number(process.env.REDIS_PORT),
+    },
     jwt: {
         access_secret: process.env.ACCESS_TOKEN_SECRET,
         refresh_secret: process.env.REFRESH_TOKEN_SECRET,
