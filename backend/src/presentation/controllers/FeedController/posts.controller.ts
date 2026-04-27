@@ -70,4 +70,22 @@ export const postController = {
       next(error);
     }
   },
+  async sharePost(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      const postId = Number(req.params.id);
+      const result = await postService.sharePost(
+        user.userId,
+        postId,
+        req.body.content,
+      );
+
+      res.status(201).json(result);
+    } catch (err) {
+      next(err);
+    }
+  },
 };
