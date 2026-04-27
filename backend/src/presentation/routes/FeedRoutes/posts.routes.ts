@@ -8,6 +8,7 @@ import {
   UpdatePostDto,
   PostIdParamDto,
 } from "../../../business/dto/Feed/posts.dto";
+import {SharePostDto} from "../../../business/dto/Feed/share.dto"
 
 const router = Router();
 
@@ -33,6 +34,14 @@ router.delete(
   authenticate,
   validateParams(PostIdParamDto),
   postController.deletePost,
+);
+
+router.post(
+  "/:id/share",
+  authenticate,
+  validateParams(PostIdParamDto),
+  validate(SharePostDto),
+  postController.sharePost,
 );
 
 export default router;

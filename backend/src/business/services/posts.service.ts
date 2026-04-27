@@ -5,15 +5,15 @@ const postService = {
   // ─── CREATE ─────────────────────────────
   async createPost(user_id: number, data: CreatePostDtoType) {
     // 🔥 SHARE logic
-    if (data.post_type === "SHARE") {
-      const original = await postRepository.findActiveById(
-        data.share_of_post_id!
-      );
+    // if (data.post_type === "SHARE") {
+    //   const original = await postRepository.findActiveById(
+    //     data.share_of_post_id!
+    //   );
 
-      if (!original) {
-        throw new Error("Original post not found");
-      }
-    }
+    //   if (!original) {
+    //     throw new Error("Original post not found");
+    //   }
+    // }
 
     // 🔥 TEXT validation
     if (data.post_type === "TEXT" && !data.content) {
@@ -35,11 +35,7 @@ const postService = {
   },
 
   // ─── UPDATE ───────────────────────────
-  async updatePost(
-    user_id: number,
-    postId: number,
-    data: UpdatePostDtoType
-  ) {
+  async updatePost(user_id: number, postId: number, data: UpdatePostDtoType) {
     const post = await postRepository.findById(postId);
 
     if (!post || post.is_deleted) {
@@ -70,6 +66,22 @@ const postService = {
     }
 
     return postRepository.softDelete(postId);
+  },
+
+  //share post funksioni ketu
+  async sharePost(user_id: number, postId: number, content?: string) {
+
+    const original = await postRepository.findActiveById(postId);
+    if (!original) {
+      throw new Error("Post not found");
+    }
+
+    return postRepository.create(user_id, {
+      content: content ?? null,
+      visibility: "PUBLIC",
+      post_type: "SHARE",
+      share_of_post_id: postId,
+    });
   },
 };
 
