@@ -6,7 +6,8 @@ export const CreatePostDto = z.object({
   content:z.string().max(1000).optional(),
   visibility: z.enum(POST_VISIBILITY),
   post_type: z.enum(POST_TYPES),
-  share_of_post_id: z.number().int().positive().optional()
+  share_of_post_id: z.number().int().positive().optional(),
+  images: z.array(z.string().url()).max(5).optional(),
 }).refine(
   (data) => {
     if(data.post_type === "TEXT"){
@@ -15,6 +16,9 @@ export const CreatePostDto = z.object({
     if(data.post_type === "SHARE"){
       return !!data.share_of_post_id;
     }
+     if (data.post_type === "IMAGE") {
+        return !!data.images && data.images.length > 0;
+      }
     return true;
   },
   {
