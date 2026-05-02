@@ -1,5 +1,9 @@
 import postRepository from "../../persistence/repositories/FeedRepositories/posts.repository";
-import { CreatePostDtoType, UpdatePostDtoType } from "../dto/Feed/posts.dto";
+import {
+  CreatePostDtoType,
+  FeedQueryDtoType,
+  UpdatePostDtoType,
+} from "../dto/Feed/posts.dto";
 import fileRepository from "../../persistence/repositories/FeedRepositories/file.repository";
 const FILE_ENTITY = {
   POST: "post",
@@ -11,24 +15,11 @@ const postService = {
     if (data.post_type === "TEXT" && !data.content) {
       throw new Error("Content is required for TEXT posts");
     }
-    const post = await postRepository.create(user_id, data);
 
-    if (data.images?.length) {
-      await Promise.all(
-        data.images.map((url) =>
-          fileRepository.create({
-            entity: FILE_ENTITY.POST,
-            entity_id: post.id,
-            file_path: url,
-            uploaded_by: user_id,
-          }),
-        ),
-      );
-    }
-
-    return post;
+    return postRepository.create(user_id, data);
   },
 
+  // ─── GET ───────────────────────────────
   async getPostById(postId: number) {
     const post = await postRepository.findActiveById(postId);
 
@@ -38,6 +29,30 @@ const postService = {
     const images = await fileRepository.findByEntity(FILE_ENTITY.POST, postId);
 
     return { ...post, images };
+  },
+
+  async getFeed(user_id: number, query: FeedQueryDtoType) {
+    const followingIds = await postRepository.findAcceptedFollowingIds(user_id);
+
+    if (query.scope === "following" && followingIds.length === 0) {
+      return {
+        data: [],
+        meta: {
+          page: query.page,
+          limit: query.limit,
+          total: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: query.page > 1,
+        },
+      };
+    }
+
+    return postRepository.findFeed({
+      ...query,
+      viewerId: user_id,
+      followingIds,
+    });
   },
 
   // ─── UPDATE ───────────────────────────

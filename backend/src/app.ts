@@ -14,6 +14,7 @@ import commentRoutes from "./presentation/routes/FeedRoutes/comments.routes";
 import messagingRoutes from './presentation/routes/message.routes'; 
 import bookmarkRoutes from "./presentation/routes/FeedRoutes/bookmark.routes";
 import categoryRoutes from "./presentation/routes/FeedRoutes/categories.routes"
+import feedRoutes from "./presentation/routes/FeedRoutes/feed.routes";
 dotenv.config();
 
 // Initialize Express app
@@ -35,6 +36,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/reactions", reactionsRoutes);
 app.use('/api/conversations', messagingRoutes);
 app.use("/api/follow", followRoutes);
+app.use("/api/feed", feedRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/posts", bookmarkRoutes)
 app.use("/api/groups", groupRoutes);

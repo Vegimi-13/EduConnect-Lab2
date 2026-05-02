@@ -1,7 +1,7 @@
-import { User } from '../../database/generated/prisma';
+import type { User } from "../../database/generated/client";
 
 export interface SafeUser {
-    id: string;
+    id: number;
     first_name: string;
     last_name: string;
     email: string;

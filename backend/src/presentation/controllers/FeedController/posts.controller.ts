@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import postService from "../../../business/services/posts.service";
+import { FeedQueryDto } from "../../../business/dto/Feed/posts.dto";
 
 export const postController = {
   async createPost(req: Request, res: Response, next: NextFunction) {
@@ -24,6 +25,29 @@ export const postController = {
       const post = await postService.getPostById(postId);
 
       res.status(200).json(post);
+    } catch (error) {
+      next(error);
+    }
+  },
+  async getFeed(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = req.user;
+      if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+
+      const queryResult = FeedQueryDto.safeParse(req.query);
+
+      if (!queryResult.success) {
+        return res.status(400).json({
+          message: "Invalid feed query",
+          errors: queryResult.error.flatten().fieldErrors,
+        });
+      }
+
+      const feed = await postService.getFeed(user.userId, queryResult.data);
+
+      res.status(200).json(feed);
     } catch (error) {
       next(error);
     }
