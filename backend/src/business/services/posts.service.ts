@@ -16,6 +16,26 @@ const postService = {
       throw new Error("Content is required for TEXT posts");
     }
 
+    if (data.visibility === "GROUP") {
+      if (!data.group_id) {
+        throw new Error("group_id is required for GROUP posts");
+      }
+
+      const group = await postRepository.findGroupById(data.group_id);
+      if (!group) {
+        throw new Error("Group not found");
+      }
+
+      const membership = await postRepository.findActiveGroupMembership(
+        data.group_id,
+        user_id,
+      );
+
+      if (!membership) {
+        throw new Error("You must be an active group member to post in this group");
+      }
+    }
+
     return postRepository.create(user_id, data);
   },
 
