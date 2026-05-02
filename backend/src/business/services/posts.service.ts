@@ -1,37 +1,43 @@
 import postRepository from "../../persistence/repositories/FeedRepositories/posts.repository";
 import { CreatePostDtoType, UpdatePostDtoType } from "../dto/Feed/posts.dto";
+import fileRepository from "../../persistence/repositories/FeedRepositories/file.repository";
+const FILE_ENTITY = {
+  POST: "post",
+} as const;
 
 const postService = {
   // ─── CREATE ─────────────────────────────
   async createPost(user_id: number, data: CreatePostDtoType) {
-    // 🔥 SHARE logic
-    // if (data.post_type === "SHARE") {
-    //   const original = await postRepository.findActiveById(
-    //     data.share_of_post_id!
-    //   );
-
-    //   if (!original) {
-    //     throw new Error("Original post not found");
-    //   }
-    // }
-
-    // 🔥 TEXT validation
     if (data.post_type === "TEXT" && !data.content) {
       throw new Error("Content is required for TEXT posts");
     }
+    const post = await postRepository.create(user_id, data);
 
-    return postRepository.create(user_id, data);
+    if (data.images?.length) {
+      await Promise.all(
+        data.images.map((url) =>
+          fileRepository.create({
+            entity: FILE_ENTITY.POST,
+            entity_id: post.id,
+            file_path: url,
+            uploaded_by: user_id,
+          }),
+        ),
+      );
+    }
+
+    return post;
   },
 
-  // ─── GET ───────────────────────────────
   async getPostById(postId: number) {
     const post = await postRepository.findActiveById(postId);
 
     if (!post) {
       throw new Error("Post not found");
     }
+    const images = await fileRepository.findByEntity(FILE_ENTITY.POST, postId);
 
-    return post;
+    return { ...post, images };
   },
 
   // ─── UPDATE ───────────────────────────
@@ -70,7 +76,6 @@ const postService = {
 
   //share post funksioni ketu
   async sharePost(user_id: number, postId: number, content?: string) {
-
     const original = await postRepository.findActiveById(postId);
     if (!original) {
       throw new Error("Post not found");
