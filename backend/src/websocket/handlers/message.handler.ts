@@ -43,7 +43,7 @@ export const messagingHandler = (io: Server, socket: Socket) => {
     socket.on('update_message', async (data: { message_id: number; conversation_id: number; content: string }) => {
         try {
             const updated = await messagingService.updateMessage(user_id, Number(data.message_id), { content: data.content });
-            io.to(`conversation:${data.conversation_id}`).emit('message_updated', updated);
+            io.to(`conversation:${updated.conversation_id}`).emit('message_updated', updated);
         } catch (error: any) {
             console.log('update_message error:', error.message);
             socket.emit('exception', error.message);
@@ -52,28 +52,40 @@ export const messagingHandler = (io: Server, socket: Socket) => {
 
     socket.on('delete_message', async (data: { message_id: number; conversation_id: number }) => {
         try {
-            await messagingService.deleteMessage(user_id, Number(data.message_id));
-            io.to(`conversation:${data.conversation_id}`).emit('message_deleted', { message_id: Number(data.message_id) });
+            const deleted = await messagingService.deleteMessage(user_id, Number(data.message_id));
+            io.to(`conversation:${deleted.conversation_id}`).emit('message_deleted', { message_id: Number(data.message_id) });
         } catch (error: any) {
             console.log('delete_message error:', error.message);
             socket.emit('exception', error.message);
         }
     });
 
-    socket.on('typing', (data: { conversation_id: number }) => {
-        const parsed = Number(data.conversation_id);
-        socket.to(`conversation:${parsed}`).emit('user_typing', { user_id, conversation_id: parsed });
+    socket.on('typing', async (data: { conversation_id: number }) => {
+        try {
+            const parsed = Number(data.conversation_id);
+            await messagingService.ensureCanAccessConversation(user_id, parsed);
+            socket.to(`conversation:${parsed}`).emit('user_typing', { user_id, conversation_id: parsed });
+        } catch (error: any) {
+            console.log('typing error:', error.message);
+            socket.emit('exception', error.message);
+        }
     });
 
-    socket.on('stop_typing', (data: { conversation_id: number }) => {
-        const parsed = Number(data.conversation_id);
-        socket.to(`conversation:${parsed}`).emit('user_stop_typing', { user_id, conversation_id: parsed });
+    socket.on('stop_typing', async (data: { conversation_id: number }) => {
+        try {
+            const parsed = Number(data.conversation_id);
+            await messagingService.ensureCanAccessConversation(user_id, parsed);
+            socket.to(`conversation:${parsed}`).emit('user_stop_typing', { user_id, conversation_id: parsed });
+        } catch (error: any) {
+            console.log('stop_typing error:', error.message);
+            socket.emit('exception', error.message);
+        }
     });
 
     socket.on('read_message', async (data: { message_id: number; conversation_id: number }) => {
         try {
-            await messagingService.markAsRead(user_id, data.message_id);
-            socket.to(`conversation:${data.conversation_id}`).emit('message_read', {
+            const status = await messagingService.markAsRead(user_id, data.message_id);
+            socket.to(`conversation:${status.message.conversation_id}`).emit('message_read', {
                 message_id: data.message_id,
                 user_id,
             });

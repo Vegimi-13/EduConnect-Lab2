@@ -5,7 +5,12 @@ import { CreateMessageDtoType, UpdateMessageDtoType } from '../../business/dto/C
 
 const messagingRepository = {
 
-    async createConversation(user_id: number, data: CreateConversationDtoType) {
+    async createConversation(user_id: number, data: CreateConversationDtoType, participantIds?: number[]) {
+        const participants = Array.from(new Set(participantIds ?? [
+            user_id,
+            ...(data.participant_id ? [data.participant_id] : []),
+        ]));
+
         return await prisma.conversation.create({
             data: {
                 type: data.type,
@@ -13,12 +18,33 @@ const messagingRepository = {
                 created_by: user_id,
                 group_channel_id: data.group_channel_id,
                 conversation_participants: {
-                    create: [
-                        { user_id },
-                        ...(data.participant_id ? [{ user_id: data.participant_id }] : []),
-                    ],
+                    create: participants.map((participantId) => ({
+                        user_id: participantId,
+                    })),
                 },
             },
+            include: {
+                conversation_participants: true,
+            },
+        });
+    },
+
+    async findGroupChannelById(id: number) {
+        return await prisma.groupChannel.findUnique({
+            where: { id },
+            include: {
+                group: {
+                    include: {
+                        group_members: true,
+                    },
+                },
+            },
+        });
+    },
+
+    async findConversationByChannelId(group_channel_id: number) {
+        return await prisma.conversation.findUnique({
+            where: { group_channel_id },
             include: {
                 conversation_participants: true,
             },
@@ -61,6 +87,54 @@ const messagingRepository = {
             where: { conversation_id_user_id: { conversation_id, user_id } },
         });
         return !!participant;
+    },
+
+    async canAccessConversation(conversation_id: number, user_id: number) {
+        const participant = await prisma.conversationParticipant.findUnique({
+            where: { conversation_id_user_id: { conversation_id, user_id } },
+        });
+
+        if (participant) {
+            return true;
+        }
+
+        const conversation = await prisma.conversation.findUnique({
+            where: { id: conversation_id },
+            include: {
+                group_channel: {
+                    include: {
+                        group: {
+                            include: {
+                                group_members: {
+                                    where: {
+                                        user_id,
+                                        OR: [{ status: null }, { status: 'active' }],
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+        });
+
+        return !!conversation?.group_channel?.group.group_members.length;
+    },
+
+    async ensureParticipant(conversation_id: number, user_id: number) {
+        return await prisma.conversationParticipant.upsert({
+            where: {
+                conversation_id_user_id: {
+                    conversation_id,
+                    user_id,
+                },
+            },
+            update: {},
+            create: {
+                conversation_id,
+                user_id,
+            },
+        });
     },
 
 
@@ -134,6 +208,13 @@ const messagingRepository = {
             where: { message_id_user_id: { message_id, user_id } },
             update: { read_at: new Date() },
             create: { message_id, user_id, delivered_at: new Date(), read_at: new Date() },
+            include: {
+                message: {
+                    select: {
+                        conversation_id: true,
+                    },
+                },
+            },
         });
     },
 
