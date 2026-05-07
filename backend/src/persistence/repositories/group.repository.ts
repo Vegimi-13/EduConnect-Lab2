@@ -166,6 +166,9 @@ const groupRepository = {
   async getGroupChannels(groupId: number) {
     return prisma.groupChannel.findMany({
       where: { group_id: groupId },
+      orderBy: {
+        created_at: "asc",
+      },
     });
   },
 
