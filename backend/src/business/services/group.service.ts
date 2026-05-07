@@ -9,6 +9,9 @@ const groupService = {
       visibility?: string;
     },
   ) {
+    if (!data.name?.trim()) {
+      throw new Error("Group name is required");
+    }
     return groupRepository.createGroup({
       owner_id: userId,
       name: data.name,
@@ -211,6 +214,9 @@ const groupService = {
 
     if (group.owner_id !== currentUserId) {
       throw new Error("Only group owner can create channels");
+    }
+    if (!data.name?.trim()) {
+      throw new Error("Channel name is required");
     }
 
     return groupRepository.createChannel(groupId, data);
