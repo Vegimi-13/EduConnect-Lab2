@@ -177,7 +177,7 @@ const groupController = {
       );
 
       res.status(200).json({
-        message: "Member removed successfully",
+        message: "Group member removed successfully",
         data: result,
       });
     } catch (error) {

@@ -179,7 +179,10 @@ const groupRepository = {
   }) {
     return prisma.groupChannel.update({
       where: { id: channelId },
-      data,
+      data: {
+        ...data,
+        updated_at: new Date(),
+      },
     });
   },
 
