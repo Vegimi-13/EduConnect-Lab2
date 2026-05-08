@@ -10,6 +10,7 @@ interface CreatePostData {
   post_type: string;
   group_id?: number;
   share_of_post_id?: number;
+  images?: string[];
 }
 
 type UpdatePostData = {

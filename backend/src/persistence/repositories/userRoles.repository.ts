@@ -3,10 +3,17 @@ import { prisma } from '../../database/prismaClients';
 const userRoleRepository = {
     // Assigns a role to a user.
     async assignRole(user_id: number, role_id: number) {
-        return await prisma.userRole.create({
-            data: {
-                user_id,
-                role_id,
+        return await prisma.userRole.upsert({
+            where: {
+                user_id_role_id: {
+                    user_id,
+                    role_id,
+                },
+            },
+            update: {},
+            create: {
+              user_id,
+              role_id,
             },
         });
     },

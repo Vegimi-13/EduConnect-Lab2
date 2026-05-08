@@ -3,6 +3,8 @@ import messagingRepository from '../../persistence/repositories/message.reposito
 import auditLogsRepository from '../../persistence/repositories/auditLogs.repository';
 import { CreateConversationDtoType } from '../dto/Conversation/conversation.dto';
 import { CreateMessageDtoType, UpdateMessageDtoType } from '../dto/Conversation/message.dto';
+import userRepository from '../../persistence/repositories/user.repository';
+import notificationService from './notification.service';
 
 const messagingService = {
 
@@ -76,7 +78,26 @@ const messagingService = {
     async sendMessage(user_id: number, conversation_id: number, data: CreateMessageDtoType) {
         await this.ensureCanAccessConversation(user_id, conversation_id);
 
-        return await messagingRepository.createMessage(conversation_id, user_id, data);
+        const message = await messagingRepository.createMessage(conversation_id, user_id, data);
+        const conversation = await messagingRepository.findConversationById(conversation_id);
+        const sender = await userRepository.findById(user_id);
+        const actorName = sender ? `${sender.first_name} ${sender.last_name}` : 'Someone';
+        const contentPreview = data.content ? `: ${preview(data.content)}` : '';
+
+        await Promise.all(
+            (conversation?.conversation_participants ?? [])
+                .filter((participant) => participant.user_id !== user_id)
+                .map((participant) =>
+                    notificationService.notify({
+                        user_id: participant.user_id,
+                        type: 'MESSAGE',
+                        title: `Message from ${actorName}`,
+                        message: `${actorName} sent a message${contentPreview}`,
+                    }),
+                ),
+        );
+
+        return message;
     },
 
     async ensureCanAccessConversation(user_id: number, conversation_id: number) {
@@ -146,5 +167,9 @@ const messagingService = {
     },
 
 };
+
+function preview(value: string, maxLength = 90) {
+    return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
 
 export default messagingService;

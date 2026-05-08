@@ -13,3 +13,17 @@ export const POST_TYPES = ["TEXT", "SHARE"] as const;
 export type PostVisibility = typeof POST_VISIBILITY[number];
 export type PostType = typeof POST_TYPES[number];
 
+export const NOTIFICATION_TYPES = [
+  "FOLLOW_REQUEST",
+  "FOLLOW_ACCEPTED",
+  "GROUP_JOIN_REQUEST",
+  "GROUP_JOIN_ACCEPTED",
+  "GROUP_JOIN_REJECTED",
+  "POST_COMMENT",
+  "POST_REACTION",
+  "COMMENT_REACTION",
+  "MESSAGE",
+] as const;
+
+export type NotificationType = typeof NOTIFICATION_TYPES[number];
+

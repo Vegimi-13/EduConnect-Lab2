@@ -1,4 +1,10 @@
 import groupRepository from "../../persistence/repositories/group.repository";
+import userRepository from "../../persistence/repositories/user.repository";
+import notificationService from "./notification.service";
+
+function fullName(user: { first_name: string; last_name: string }) {
+  return `${user.first_name} ${user.last_name}`;
+}
 
 const groupService = {
   async createGroup(
@@ -83,11 +89,34 @@ const groupService = {
       throw new Error("You are already a member of this group");
     }
 
+    const requester = await userRepository.findById(currentUserId);
+    const actorName = requester ? fullName(requester) : "Someone";
+
     if (group.visibility === "public") {
-      return groupRepository.addGroupMember(groupId, currentUserId);
+      const membership = await groupRepository.addGroupMember(groupId, currentUserId);
+
+      if (group.owner_id !== currentUserId) {
+        await notificationService.notify({
+          user_id: group.owner_id,
+          type: "GROUP_JOIN_ACCEPTED",
+          title: "New group member",
+          message: `${actorName} joined ${group.name}.`,
+        });
+      }
+
+      return membership;
     }
 
-    return groupRepository.createJoinRequest(groupId, currentUserId);
+    const request = await groupRepository.createJoinRequest(groupId, currentUserId);
+
+    await notificationService.notify({
+      user_id: group.owner_id,
+      type: "GROUP_JOIN_REQUEST",
+      title: "New group join request",
+      message: `${actorName} requested to join ${group.name}.`,
+    });
+
+    return request;
   },
 
   async handleJoinRequest(
@@ -132,6 +161,13 @@ const groupService = {
         await groupRepository.addGroupMember(groupId, request.user_id);
       }
     }
+
+    await notificationService.notify({
+      user_id: request.user_id,
+      type: status === "accepted" ? "GROUP_JOIN_ACCEPTED" : "GROUP_JOIN_REJECTED",
+      title: status === "accepted" ? "Group request accepted" : "Group request rejected",
+      message: `Your request to join ${group.name} was ${status}.`,
+    });
 
     return updatedRequest;
   },

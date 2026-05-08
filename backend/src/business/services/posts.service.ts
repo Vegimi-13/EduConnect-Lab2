@@ -36,7 +36,22 @@ const postService = {
       }
     }
 
-    return postRepository.create(user_id, data);
+    const post = await postRepository.create(user_id, data);
+
+    if (!data.images?.length) {
+      return { ...post, images: [] };
+    }
+
+    const images = await fileRepository.createMany(
+      data.images.map((image) => ({
+        entity: FILE_ENTITY.POST,
+        entity_id: post.id,
+        file_path: image,
+        uploaded_by: user_id,
+      })),
+    );
+
+    return { ...post, images };
   },
 
   // ─── GET ───────────────────────────────
@@ -68,11 +83,29 @@ const postService = {
       };
     }
 
-    return postRepository.findFeed({
+    const feed = await postRepository.findFeed({
       ...query,
       viewerId: user_id,
       followingIds,
     });
+
+    const postIds = feed.data.map((post: { id: number }) => post.id);
+    const images = await fileRepository.findByEntities(FILE_ENTITY.POST, postIds);
+    const imagesByPost = new Map<number, typeof images>();
+
+    for (const image of images) {
+      const existing = imagesByPost.get(image.entity_id) ?? [];
+      existing.push(image);
+      imagesByPost.set(image.entity_id, existing);
+    }
+
+    return {
+      ...feed,
+      data: feed.data.map((post: { id: number }) => ({
+        ...post,
+        images: imagesByPost.get(post.id) ?? [],
+      })),
+    };
   },
 
   // ─── UPDATE ───────────────────────────

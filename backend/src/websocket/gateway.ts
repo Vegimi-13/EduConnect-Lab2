@@ -3,6 +3,7 @@ import { Server as HttpServer } from 'http';
 import { config } from '../config/env';
 import { createAdapter } from '@socket.io/redis-adapter';
 import { messagingHandler } from './handlers/message.handler';
+import { notificationHandler } from './handlers/notification.handler';
 import { socketAuthMiddleware } from './socker.middleware';
 import redisClient from '../database/redisClient';
 
@@ -27,6 +28,7 @@ export const initalizeWebsocket = (server: HttpServer) => {
     io.on('connection', (socket) => {
         console.log('A user connected:', socket.id);
         messagingHandler(io, socket);
+        notificationHandler(io, socket);
 
         socket.on('disconnect', () => {
             console.log('A user disconnected:', socket.id);

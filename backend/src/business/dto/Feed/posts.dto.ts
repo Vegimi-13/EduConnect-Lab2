@@ -17,9 +17,6 @@ export const CreatePostDto = z.object({
     if(data.post_type === "SHARE"){
       return !!data.share_of_post_id;
     }
-     if (data.post_type === "IMAGE") {
-        return !!data.images && data.images.length > 0;
-      }
     return true;
   },
   {

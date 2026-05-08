@@ -1,5 +1,7 @@
 import commentRepository from "../../persistence/repositories/FeedRepositories/comments.repository";
 import postRepository from "../../persistence/repositories/FeedRepositories/posts.repository";
+import userRepository from "../../persistence/repositories/user.repository";
+import notificationService from "./notification.service";
 import {
   CreateCommentDtoType,
   UpdateCommentDtoType,
@@ -35,7 +37,23 @@ const commentService = {
       }
     }
 
-    return commentRepository.create(user_id, postId, data);
+    const comment = await commentRepository.create(user_id, postId, data);
+
+    if (post.user_id !== user_id) {
+      const commenter = await userRepository.findById(user_id);
+      const actorName = commenter
+        ? `${commenter.first_name} ${commenter.last_name}`
+        : "Someone";
+
+      await notificationService.notify({
+        user_id: post.user_id,
+        type: "POST_COMMENT",
+        title: "New comment",
+        message: `${actorName} commented: ${preview(data.content)}`,
+      });
+    }
+
+    return comment;
   },
 
   // ─── UPDATE COMMENT ─────────────────────
@@ -78,5 +96,9 @@ const commentService = {
     return commentRepository.softDelete(commentId);
   },
 };
+
+function preview(value: string, maxLength = 90) {
+  return value.length > maxLength ? `${value.slice(0, maxLength - 3)}...` : value;
+}
 
 export default commentService;

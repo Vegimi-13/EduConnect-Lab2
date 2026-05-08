@@ -57,6 +57,28 @@ const reactionRepository = {
       where: { id },
     });
   },
+
+  async findTargetOwnerId(target_type: string, target_id: number) {
+    if (target_type === "POST") {
+      const post = await prisma.post.findUnique({
+        where: { id: target_id },
+        select: { user_id: true },
+      });
+
+      return post?.user_id ?? null;
+    }
+
+    if (target_type === "COMMENT") {
+      const comment = await prisma.comment.findUnique({
+        where: { id: target_id },
+        select: { user_id: true },
+      });
+
+      return comment?.user_id ?? null;
+    }
+
+    return null;
+  },
 };
 
 export default reactionRepository;

@@ -15,6 +15,8 @@ import messagingRoutes from './presentation/routes/message.routes';
 import bookmarkRoutes from "./presentation/routes/FeedRoutes/bookmark.routes";
 import categoryRoutes from "./presentation/routes/FeedRoutes/categories.routes"
 import feedRoutes from "./presentation/routes/FeedRoutes/feed.routes";
+import roleRoutes from "./presentation/routes/role.routes";
+import notificationRoutes from "./presentation/routes/notification.routes";
 dotenv.config();
 
 // Initialize Express app
@@ -42,6 +44,8 @@ app.use("/api/posts", bookmarkRoutes)
 app.use("/api/groups", groupRoutes);
 app.use("/api", commentRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/roles", roleRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 // TEST ROUTE FOR PRISMA
 app.get("/api/test-db", async (_req, res) => {

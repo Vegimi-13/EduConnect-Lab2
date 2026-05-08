@@ -24,11 +24,28 @@ const fileRepository = {
     });
   },
 
+  async createMany(files: CreateFileData[]) {
+    return Promise.all(files.map((file) => this.create(file)));
+  },
+
   async findByEntity(entity: string, entity_id: number) {
     return prisma.file.findMany({
       where: {
         entity,
         entity_id,
+      },
+    });
+  },
+
+  async findByEntities(entity: string, entityIds: number[]) {
+    if (entityIds.length === 0) {
+      return [];
+    }
+
+    return prisma.file.findMany({
+      where: {
+        entity,
+        entity_id: { in: entityIds },
       },
     });
   },
