@@ -91,7 +91,7 @@ const groupController = {
       const result = await groupService.joinGroup(user.userId, groupId);
 
       res.status(200).json({
-        message: "Join request sent / joined successfully",
+        message: "Group join operation completed successfully",
         data: result,
       });
     } catch (error) {
@@ -177,7 +177,7 @@ const groupController = {
       );
 
       res.status(200).json({
-        message: "Member removed successfully",
+        message: "Group member removed successfully",
         data: result,
       });
     } catch (error) {
