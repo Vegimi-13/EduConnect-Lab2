@@ -16,6 +16,11 @@ export const config = {
     server: {
         port: Number(process.env.PORT),
     },
+    livekit: {
+        secret: process.env.LIVEKIT_API_SECRET,
+        url: process.env.LIVEKIT_URL,
+        key: process.env.LIVEKIT_API_KEY
+    },
     redis: {
         host: process.env.REDIS_HOST,
         port: Number(process.env.REDIS_PORT),
