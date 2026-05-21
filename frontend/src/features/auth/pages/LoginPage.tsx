@@ -1,7 +1,7 @@
 import { Eye, Lock, Mail } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { useAuthStore } from "../store/authStore";
 import type { AuthApiError } from "../types/auth.types";
 
 export function LoginPage() {
+  const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -31,6 +32,7 @@ export function LoginPage() {
       const auth = await authApi.login({ email, password });
       setAuth(auth);
       setSuccessMessage("You are signed in. Your session is ready.");
+      navigate("/feed");
     } catch (caughtError) {
       const authError = caughtError as AuthApiError;
       setError(authError.message);

@@ -3,6 +3,17 @@ import commentService from "../../../business/services/comments.service";
 
 const commentController = {
   // ─── CREATE COMMENT ─────────────────────
+  async getCommentsByPost(req: Request, res: Response, next: NextFunction) {
+    try {
+      const postId = Number(req.params.id);
+      const comments = await commentService.getCommentsByPost(postId);
+
+      res.status(200).json(comments);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createComment(req: Request, res: Response, next: NextFunction) {
     try {
       const user = req.user;

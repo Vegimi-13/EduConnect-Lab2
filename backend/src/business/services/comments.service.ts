@@ -9,6 +9,16 @@ import {
 
 const commentService = {
   // ─── CREATE COMMENT ─────────────────────
+  async getCommentsByPost(postId: number) {
+    const post = await postRepository.findActiveById(postId);
+
+    if (!post) {
+      throw new Error("Post not found");
+    }
+
+    return commentRepository.findByPostId(postId);
+  },
+
   async createComment(
     user_id: number,
     postId: number,

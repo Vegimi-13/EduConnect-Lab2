@@ -1,7 +1,7 @@
 import { Lock, Mail, UserRound } from "lucide-react";
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,7 @@ import { useAuthStore } from "../store/authStore";
 import type { AuthApiError } from "../types/auth.types";
 
 export function RegisterPage() {
+  const navigate = useNavigate();
   const setAuth = useAuthStore((state) => state.setAuth);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -38,6 +39,7 @@ export function RegisterPage() {
       });
       setAuth(auth);
       setSuccessMessage("Your account is ready. Welcome to EduConnect.");
+      navigate("/feed");
     } catch (caughtError) {
       const authError = caughtError as AuthApiError;
       setError(authError.message);

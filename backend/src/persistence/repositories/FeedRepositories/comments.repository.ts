@@ -58,6 +58,28 @@ const commentRepository = {
   },
 
   // ─── UPDATE ─────────────────────────────
+  async findByPostId(post_id: number) {
+    return prisma.comment.findMany({
+      where: {
+        post_id,
+        is_deleted: false,
+      },
+      orderBy: {
+        created_at: "asc",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            first_name: true,
+            last_name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  },
+
   async update(id: number, data: UpdateCommentData) {
     return prisma.comment.update({
       where: { id },

@@ -14,6 +14,14 @@ import {
 
 const router = Router();
 
+// GET /api/posts/:id/comments
+router.get(
+  "/posts/:id/comments",
+  authenticate,
+  validateParams(PostIdParamDto),
+  commentController.getCommentsByPost
+);
+
 // POST /api/posts/:id/comments
 router.post(
   "/posts/:id/comments",
