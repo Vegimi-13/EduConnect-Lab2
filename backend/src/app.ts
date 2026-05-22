@@ -19,6 +19,7 @@ import roleRoutes from "./presentation/routes/role.routes";
 import notificationRoutes from "./presentation/routes/notification.routes";
 import livekitRoutes from "./presentation/routes/livekit.routes";
 import searchRoutes from "./presentation/routes/SearchRoutes/search.routes";
+import reportRoutes from "./presentation/routes/ReportRoutes/report.routes";
 dotenv.config();
 
 // Initialize Express app
@@ -42,6 +43,7 @@ app.use("/api/conversations", messagingRoutes);
 app.use("/api/follow", followRoutes);
 app.use("/api/feed", feedRoutes);
 app.use("/api/search", searchRoutes);
+app.use("/api/reports", reportRoutes);
 app.use("/api/posts", postRoutes);
 app.use("/api/posts", bookmarkRoutes);
 app.use("/api/groups", groupRoutes);
