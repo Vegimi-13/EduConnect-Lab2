@@ -1,6 +1,7 @@
 import { ReportsSummaryCards } from "../components/ReportsSummaryCards";
 import { ReportsFilters } from "../components/ReportsFilters";
 import { ReportsTable } from "../components/ReportsTable";
+import { ReportsCharts } from "../components/ReportsCharts";
 export const ReportsPage = () => {
   return (
     <main className="min-h-screen bg-slate-50 p-6">
@@ -21,6 +22,7 @@ export const ReportsPage = () => {
         <ReportsSummaryCards />
         <ReportsFilters />
         <ReportsTable />
+        <ReportsCharts />
       </div>
     </main>
   );
