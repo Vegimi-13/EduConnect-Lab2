@@ -172,7 +172,7 @@ export function AppShell({
               Join Research Group
             </Button>
             <button
-              className="mt-4 flex h-10 items-center gap-3 rounded-md px-4 text-sm text-[#263336] transition hover:bg-white/60 disabled:opacity-60"
+              className="mt-4 flex h-10 w-full cursor-pointer items-center gap-3 rounded-md px-4 text-sm text-[#263336] transition hover:bg-white/60 disabled:cursor-not-allowed disabled:opacity-60"
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
