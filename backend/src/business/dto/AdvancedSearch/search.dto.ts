@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const SearchUsersQueryDto = z.object({
+export const SearchQueryDto = z.object({
   q: z.string().min(1),
 
   page: z
@@ -13,4 +13,4 @@ export const SearchUsersQueryDto = z.object({
     .transform((val) => Number(val) || 10),
 });
 
-export type SearchUsersQueryDtoType = z.infer<typeof SearchUsersQueryDto>;
+export type SearchQueryDtoType = z.infer<typeof SearchQueryDto>;

@@ -9,6 +9,8 @@ const FILE_ENTITY = {
   POST: "post",
 } as const;
 
+import auditLogsRepository from "../../persistence/repositories/auditLogs.repository";
+
 const postService = {
   // ─── CREATE ─────────────────────────────
   async createPost(user_id: number, data: CreatePostDtoType) {
@@ -32,11 +34,28 @@ const postService = {
       );
 
       if (!membership) {
-        throw new Error("You must be an active group member to post in this group");
+        throw new Error(
+          "You must be an active group member to post in this group",
+        );
       }
     }
 
     const post = await postRepository.create(user_id, data);
+
+    await auditLogsRepository.log({
+      action: "CREATE_POST",
+      user_id,
+      entity: "POST",
+      entity_id: post.id,
+      old_value: null,
+      new_value: JSON.stringify({
+        content: post.content,
+        visibility: post.visibility,
+        post_type: post.post_type,
+      }),
+
+      ip_address: null,
+    });
 
     if (!data.images?.length) {
       return { ...post, images: [] };
@@ -90,7 +109,10 @@ const postService = {
     });
 
     const postIds = feed.data.map((post: { id: number }) => post.id);
-    const images = await fileRepository.findByEntities(FILE_ENTITY.POST, postIds);
+    const images = await fileRepository.findByEntities(
+      FILE_ENTITY.POST,
+      postIds,
+    );
     const imagesByPost = new Map<number, typeof images>();
 
     for (const image of images) {
@@ -138,8 +160,20 @@ const postService = {
     if (post.user_id !== user_id) {
       throw new Error("Unauthorized");
     }
+    const deletedPost = await postRepository.softDelete(postId);
+    await auditLogsRepository.log({
+      action: "DELETE_POST",
+      user_id,
+      entity: "POST",
+      entity_id: post.id,
+      old_value: JSON.stringify(post),
+      new_value: JSON.stringify({
+        is_deleted: true,
+      }),
+      ip_address: null,
+    });
 
-    return postRepository.softDelete(postId);
+    return deletedPost;
   },
 
   //share post funksioni ketu
