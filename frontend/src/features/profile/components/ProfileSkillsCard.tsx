@@ -40,6 +40,15 @@ export function ProfileSkillsCard({
       return;
     }
 
+    const alreadyExists = skills.some(
+      (skill) => skill.name.trim().toLowerCase() === name.toLowerCase()
+    );
+
+    if (alreadyExists) {
+      setLocalError("Skill already added.");
+      return;
+    }
+
     setLocalError(null);
     onAdd(name);
   }
@@ -56,7 +65,12 @@ export function ProfileSkillsCard({
         <form className="flex gap-2" onSubmit={handleSubmit}>
           <Input
             value={skillName}
-            onChange={(event) => setSkillName(event.target.value)}
+            onChange={(event) => {
+              setSkillName(event.target.value);
+              if (localError) {
+                setLocalError(null);
+              }
+            }}
             placeholder="Add a skill"
             maxLength={60}
           />

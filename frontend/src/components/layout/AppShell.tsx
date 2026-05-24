@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import {
@@ -19,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { authApi } from "@/features/auth/api/authApi";
 import { useAuthStore } from "@/features/auth/store/authStore";
+import { profileApi } from "@/features/profile/api/profileApi";
 
 type AppShellProps = {
   children: ReactNode;
@@ -43,14 +45,45 @@ function UserAvatar({ label = "AR" }: { label?: string }) {
   );
 }
 
+function getInitialsFromEmail(email?: string | null) {
+  if (!email) {
+    return "EC";
+  }
+
+  const localPart = email.split("@")[0]?.trim();
+
+  if (!localPart) {
+    return "EC";
+  }
+
+  const pieces = localPart.split(/[._-\s]+/).filter(Boolean);
+
+  if (pieces.length >= 2) {
+    return `${pieces[0][0]}${pieces[1][0]}`.toUpperCase();
+  }
+
+  return localPart.slice(0, 2).toUpperCase();
+}
+
 export function AppShell({
   children,
   rightRail,
   activeItem = "Home Feed",
 }: AppShellProps) {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const profileQuery = useQuery({
+    queryKey: ["profile", "me"],
+    queryFn: profileApi.getMyProfile,
+    retry: false,
+  });
+
+  const initials =
+    profileQuery.data?.first_name?.[0] && profileQuery.data?.last_name?.[0]
+      ? `${profileQuery.data.first_name[0]}${profileQuery.data.last_name[0]}`.toUpperCase()
+      : getInitialsFromEmail(user?.email);
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -90,7 +123,7 @@ export function AppShell({
           <Button className="hidden h-9 bg-[#073f43] px-4 text-sm text-white hover:bg-[#062f33] sm:inline-flex">
             Create Post
           </Button>
-          <UserAvatar />
+          <UserAvatar label={initials} />
         </div>
       </header>
 
@@ -139,7 +172,7 @@ export function AppShell({
               Join Research Group
             </Button>
             <button
-              className="mt-4 flex h-9 items-center gap-3 px-4 text-sm text-[#263336]"
+              className="mt-4 flex h-10 items-center gap-3 rounded-md px-4 text-sm text-[#263336] transition hover:bg-white/60 disabled:opacity-60"
               type="button"
               onClick={handleLogout}
               disabled={isLoggingOut}
