@@ -1,4 +1,7 @@
 import type { ReactNode } from "react";
+import { useState } from "react";
+import { NavLink } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   Bell,
   Compass,
@@ -14,6 +17,8 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { authApi } from "@/features/auth/api/authApi";
+import { useAuthStore } from "@/features/auth/store/authStore";
 
 type AppShellProps = {
   children: ReactNode;
@@ -22,12 +27,12 @@ type AppShellProps = {
 };
 
 const navItems = [
-  { label: "Home Feed", icon: LayoutDashboard },
+  { label: "Home Feed", icon: LayoutDashboard, to: "/feed" },
   { label: "Explore", icon: Compass },
   { label: "My Groups", icon: UsersRound },
   { label: "Messages", icon: MessageSquare },
   { label: "Notifications", icon: Bell },
-  { label: "Profile", icon: UserRound },
+  { label: "Profile", icon: UserRound, to: "/profile" },
 ];
 
 function UserAvatar({ label = "AR" }: { label?: string }) {
@@ -43,6 +48,24 @@ export function AppShell({
   rightRail,
   activeItem = "Home Feed",
 }: AppShellProps) {
+  const navigate = useNavigate();
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  async function handleLogout() {
+    setIsLoggingOut(true);
+
+    try {
+      await authApi.logout();
+    } catch {
+      // Clear local session even if the server-side logout request fails.
+    } finally {
+      clearAuth();
+      navigate("/login");
+      setIsLoggingOut(false);
+    }
+  }
+
   return (
     <main className="h-dvh overflow-hidden bg-[#f3f6fb] text-[#101820]">
       <header className="flex h-16 items-center justify-between border-b border-[#c8d1d7] bg-white px-5 lg:px-7">
@@ -82,15 +105,25 @@ export function AppShell({
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.label === activeItem;
+              const className = `flex h-10 w-full items-center gap-3 rounded-md px-4 text-left text-sm transition ${
+                isActive
+                  ? "bg-[#d0dee9] font-bold text-[#042f33]"
+                  : "text-[#263336] hover:bg-white/60"
+              }`;
+
+              if (item.to) {
+                return (
+                  <NavLink key={item.label} to={item.to} className={className}>
+                    <Icon className="size-4" />
+                    {item.label}
+                  </NavLink>
+                );
+              }
 
               return (
                 <button
                   key={item.label}
-                  className={`flex h-10 w-full items-center gap-3 rounded-md px-4 text-left text-sm transition ${
-                    isActive
-                      ? "bg-[#d0dee9] font-bold text-[#042f33]"
-                      : "text-[#263336] hover:bg-white/60"
-                  }`}
+                  className={className}
                   type="button"
                 >
                   <Icon className="size-4" />
@@ -108,9 +141,11 @@ export function AppShell({
             <button
               className="mt-4 flex h-9 items-center gap-3 px-4 text-sm text-[#263336]"
               type="button"
+              onClick={handleLogout}
+              disabled={isLoggingOut}
             >
               <LogOut className="size-4" />
-              Logout
+              {isLoggingOut ? "Logging out..." : "Logout"}
             </button>
           </div>
         </aside>
