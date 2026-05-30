@@ -32,7 +32,8 @@
     "prisma:reset": "prisma migrate reset --schema=src/database/prisma/schema.prisma",
     "prisma:push": "prisma db push --schema=src/database/prisma/schema.prisma",
     "prisma:studio": "prisma studio --schema=src/database/prisma/schema.prisma",
-    "seed": "ts-node src/database/seed.ts"
+    "seed": "ts-node src/database/seed.ts",
+    "seed:admin": "ts-node src/database/seedAdmin.ts"
   },
   "devDependencies": {
     "@types/bcryptjs": "^3.0.0",

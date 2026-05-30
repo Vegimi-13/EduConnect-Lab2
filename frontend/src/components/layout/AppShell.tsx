@@ -12,12 +12,14 @@ import {
   Mail,
   MessageSquare,
   Search,
+  ShieldCheck,
   UserRound,
   UsersRound,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { adminApi } from "@/features/admin/api/adminApi";
 import { authApi } from "@/features/auth/api/authApi";
 import { useAuthStore } from "@/features/auth/store/authStore";
 import { profileApi } from "@/features/profile/api/profileApi";
@@ -34,6 +36,7 @@ const navItems = [
   { label: "My Groups", icon: UsersRound },
   { label: "Messages", icon: MessageSquare },
   { label: "Notifications", icon: Bell },
+  { label: "Admin", icon: ShieldCheck, to: "/admin" },
   { label: "Profile", icon: UserRound, to: "/profile" },
 ];
 
@@ -79,11 +82,19 @@ export function AppShell({
     queryFn: profileApi.getMyProfile,
     retry: false,
   });
+  const adminAccessQuery = useQuery({
+    queryKey: ["admin", "roles"],
+    queryFn: adminApi.getRoles,
+    retry: false,
+  });
 
   const initials =
     profileQuery.data?.first_name?.[0] && profileQuery.data?.last_name?.[0]
       ? `${profileQuery.data.first_name[0]}${profileQuery.data.last_name[0]}`.toUpperCase()
       : getInitialsFromEmail(user?.email);
+  const visibleNavItems = navItems.filter(
+    (item) => item.label !== "Admin" || adminAccessQuery.isSuccess
+  );
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -135,7 +146,7 @@ export function AppShell({
           </div>
 
           <nav className="mt-9 space-y-1.5">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.label === activeItem;
               const className = `flex h-10 w-full items-center gap-3 rounded-md px-4 text-left text-sm transition ${
