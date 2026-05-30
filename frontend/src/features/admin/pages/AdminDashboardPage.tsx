@@ -10,9 +10,11 @@ import { AdminRecentActivity } from "../components/AdminRecentActivity";
 import { AdminRolesPanel } from "../components/AdminRolesPanel";
 import { AdminSystemPanel } from "../components/AdminSystemPanel";
 import { AdminUserRolesPanel } from "../components/AdminUserRolesPanel";
+import { AdminAuditLogsPanel } from "../components/AdminAuditLogsPanel";
 
 const rolesQueryKey = ["admin", "roles"];
 const permissionsQueryKey = ["admin", "permissions"];
+const auditLogsQueryKey = ["admin", "audit-logs"];
 
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error) {
@@ -68,6 +70,11 @@ export function AdminDashboardPage() {
     queryFn: adminApi.getRecentFeed,
   });
 
+  const auditLogsQuery = useQuery({
+    queryKey: auditLogsQueryKey,
+    queryFn: () => adminApi.getAuditLogs(1, 10),
+  });
+
   const assignPermissionMutation = useMutation({
     mutationFn: ({
       roleId,
@@ -79,6 +86,7 @@ export function AdminDashboardPage() {
     onSuccess: async () => {
       setRolesError(null);
       await queryClient.invalidateQueries({ queryKey: rolesQueryKey });
+      await queryClient.invalidateQueries({ queryKey: auditLogsQueryKey });
     },
     onError: (error) => {
       setRolesError(getErrorMessage(error, "Could not assign permission."));
@@ -96,6 +104,7 @@ export function AdminDashboardPage() {
     onSuccess: async () => {
       setRolesError(null);
       await queryClient.invalidateQueries({ queryKey: rolesQueryKey });
+      await queryClient.invalidateQueries({ queryKey: auditLogsQueryKey });
     },
     onError: (error) => {
       setRolesError(getErrorMessage(error, "Could not remove permission."));
@@ -105,8 +114,9 @@ export function AdminDashboardPage() {
   const assignRoleMutation = useMutation({
     mutationFn: ({ userId, roleId }: { userId: number; roleId: number }) =>
       adminApi.assignRole(userId, roleId),
-    onSuccess: () => {
+    onSuccess: async () => {
       setUserRolesError(null);
+      await queryClient.invalidateQueries({ queryKey: auditLogsQueryKey });
     },
     onError: (error) => {
       setUserRolesError(getErrorMessage(error, "Could not assign role."));
@@ -116,11 +126,28 @@ export function AdminDashboardPage() {
   const removeRoleMutation = useMutation({
     mutationFn: ({ userId, roleId }: { userId: number; roleId: number }) =>
       adminApi.removeRole(userId, roleId),
-    onSuccess: () => {
+    onSuccess: async () => {
       setUserRolesError(null);
+      await queryClient.invalidateQueries({ queryKey: auditLogsQueryKey });
     },
     onError: (error) => {
       setUserRolesError(getErrorMessage(error, "Could not remove role."));
+    },
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: (userId: number) => adminApi.deleteUser(userId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "users"] });
+      await queryClient.invalidateQueries({ queryKey: auditLogsQueryKey });
+    },
+  });
+
+  const deletePostMutation = useMutation({
+    mutationFn: (postId: number) => adminApi.deletePost(postId),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ["admin", "recent-feed"] });
+      await queryClient.invalidateQueries({ queryKey: auditLogsQueryKey });
     },
   });
 
@@ -128,6 +155,8 @@ export function AdminDashboardPage() {
   const permissions = permissionsQuery.data ?? [];
   const users = usersQuery.data ?? [];
   const recentPosts = feedQuery.data?.data ?? [];
+  const auditLogs = auditLogsQuery.data?.data ?? [];
+
   const accessError = useMemo(() => {
     if (!rolesQuery.error && !permissionsQuery.error) {
       return null;
@@ -163,7 +192,7 @@ export function AdminDashboardPage() {
         permissionsCount={permissions.length}
       />
     }>
-      <div className="mx-auto max-w-[76rem] space-y-5">
+      <div className="mx-auto max-w-[76rem] space-y-5 pb-10">
         <AdminHero />
 
         <AdminMetricGrid
@@ -194,7 +223,11 @@ export function AdminDashboardPage() {
             users={users}
             roles={roles}
             query={userQuery}
-            isSaving={assignRoleMutation.isPending || removeRoleMutation.isPending}
+            isSaving={
+              assignRoleMutation.isPending || 
+              removeRoleMutation.isPending || 
+              deleteUserMutation.isPending
+            }
             error={userRolesError}
             onQueryChange={setUserQuery}
             onAssignRole={(userId, roleId) =>
@@ -203,8 +236,14 @@ export function AdminDashboardPage() {
             onRemoveRole={(userId, roleId) =>
               removeRoleMutation.mutate({ userId, roleId })
             }
+            onDeleteUser={(userId) => deleteUserMutation.mutate(userId)}
           />
         </div>
+
+        <AdminAuditLogsPanel 
+          logs={auditLogs} 
+          isLoading={auditLogsQuery.isLoading} 
+        />
 
         <div className="grid gap-5 xl:hidden">
           <AdminSystemPanel
@@ -216,6 +255,7 @@ export function AdminDashboardPage() {
         <AdminRecentActivity
           posts={recentPosts}
           isLoading={feedQuery.isLoading}
+          onDeletePost={(postId) => deletePostMutation.mutate(postId)}
         />
       </div>
     </AppShell>

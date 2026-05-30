@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, UserCog } from "lucide-react";
+import { Search, Trash2, UserCog } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -15,6 +15,7 @@ type AdminUserRolesPanelProps = {
   onQueryChange: (query: string) => void;
   onAssignRole: (userId: number, roleId: number) => void;
   onRemoveRole: (userId: number, roleId: number) => void;
+  onDeleteUser: (userId: number) => void;
 };
 
 function getUserName(user: AdminUser) {
@@ -36,6 +37,7 @@ export function AdminUserRolesPanel({
   onQueryChange,
   onAssignRole,
   onRemoveRole,
+  onDeleteUser,
 }: AdminUserRolesPanelProps) {
   const [roleByUser, setRoleByUser] = useState<Record<number, string>>({});
 
@@ -48,7 +50,7 @@ export function AdminUserRolesPanel({
       <CardHeader className="p-5">
         <h2 className="flex items-center gap-2 text-lg font-semibold">
           <UserCog className="size-5" />
-          User Role Assignment
+          User Management
         </h2>
       </CardHeader>
       <CardContent className="space-y-4 px-5 pb-5">
@@ -90,7 +92,7 @@ export function AdminUserRolesPanel({
                     </div>
                   </div>
 
-                  <div className="grid gap-2 sm:grid-cols-[minmax(0,12rem)_auto_auto]">
+                  <div className="grid gap-2 sm:grid-cols-[minmax(0,12rem)_auto_auto_auto]">
                     <select
                       value={roleByUser[user.id] ?? ""}
                       onChange={(event) =>
@@ -122,6 +124,19 @@ export function AdminUserRolesPanel({
                       onClick={() => onRemoveRole(user.id, selectedRole)}
                     >
                       Remove
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="h-10 w-10"
+                      disabled={isSaving}
+                      onClick={() => {
+                        if (confirm(`Are you sure you want to delete user ${getUserName(user)}?`)) {
+                          onDeleteUser(user.id);
+                        }
+                      }}
+                    >
+                      <Trash2 className="size-4" />
                     </Button>
                   </div>
                 </div>

@@ -41,6 +41,30 @@ export type AdminUser = {
   first_name: string;
   last_name: string;
   email: string;
+  is_active?: boolean;
+};
+
+export type AdminAuditLog = {
+  id: number;
+  user_id: number | null;
+  action: string;
+  entity: string;
+  entity_id: number;
+  old_value: string | null;
+  new_value: string | null;
+  ip_address: string | null;
+  created_at: string;
+  user: AdminUser | null;
+};
+
+export type AdminAuditLogResponse = {
+  data: AdminAuditLog[];
+  meta: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
 };
 
 export type AdminFeedResponse = {

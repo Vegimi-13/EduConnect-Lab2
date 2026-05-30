@@ -1,11 +1,13 @@
-import { MessageSquare, ScrollText, ThumbsUp } from "lucide-react";
+import { MessageSquare, ScrollText, ThumbsUp, Trash2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import type { FeedPost } from "@/features/feed/types/feed.types";
 
 type AdminRecentActivityProps = {
   posts: FeedPost[];
   isLoading: boolean;
+  onDeletePost: (postId: number) => void;
 };
 
 function getAuthor(post: FeedPost) {
@@ -19,6 +21,7 @@ function formatVisibility(value: string) {
 export function AdminRecentActivity({
   posts,
   isLoading,
+  onDeletePost,
 }: AdminRecentActivityProps) {
   return (
     <Card className="border-[#b8c4c7] bg-white">
@@ -51,9 +54,23 @@ export function AdminRecentActivity({
                   {post.content || "Shared a post"}
                 </p>
               </div>
-              <span className="rounded-md bg-[#edf3fb] px-2.5 py-1 text-xs font-semibold capitalize text-[#073f43]">
-                {formatVisibility(String(post.visibility))}
-              </span>
+              <div className="flex flex-col items-end gap-2">
+                <span className="rounded-md bg-[#edf3fb] px-2.5 py-1 text-xs font-semibold capitalize text-[#073f43]">
+                  {formatVisibility(String(post.visibility))}
+                </span>
+                <Button
+                  variant="destructive"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={() => {
+                    if (confirm("Are you sure you want to delete this post?")) {
+                      onDeletePost(post.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="size-3.5" />
+                </Button>
+              </div>
             </div>
 
             <div className="mt-3 flex items-center gap-4 text-xs font-medium text-[#4b5563]">

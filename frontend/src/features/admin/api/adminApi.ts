@@ -7,6 +7,7 @@ import type {
   AdminPermission,
   AdminRole,
   AdminUser,
+  AdminAuditLogResponse,
   ReportsOverviewResponse,
 } from "../types/admin.types";
 
@@ -100,6 +101,22 @@ function getRecentFeed() {
   );
 }
 
+function getAuditLogs(page: number = 1, limit: number = 10) {
+  return requestAdmin(
+    api.get<AdminAuditLogResponse>("/admin/audit-logs", {
+      params: { page, limit },
+    })
+  );
+}
+
+function deleteUser(userId: number) {
+  return requestAdmin(api.delete(`/admin/users/${userId}`));
+}
+
+function deletePost(postId: number) {
+  return requestAdmin(api.delete(`/admin/posts/${postId}`));
+}
+
 export const adminApi = {
   getOverview,
   getRoles,
@@ -110,4 +127,7 @@ export const adminApi = {
   assignPermission,
   removePermission,
   getRecentFeed,
+  getAuditLogs,
+  deleteUser,
+  deletePost,
 };
