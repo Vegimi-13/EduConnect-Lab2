@@ -31,6 +31,51 @@ const userRepository = {
             },
         });
     },
+
+    async delete(id: number) {
+        return await prisma.user.update({
+            where: { id },
+            data: { is_active: false },
+        });
+    },
+
+    async findMany(page: number = 1, limit: number = 10, query?: string) {
+        const skip = (page - 1) * limit;
+        const where = query ? {
+            OR: [
+                { first_name: { contains: query, mode: 'insensitive' as const } },
+                { last_name: { contains: query, mode: 'insensitive' as const } },
+                { email: { contains: query, mode: 'insensitive' as const } },
+            ]
+        } : {};
+
+        const [users, total] = await prisma.$transaction([
+            prisma.user.findMany({
+                where,
+                skip,
+                take: limit,
+                orderBy: { created_at: 'desc' },
+                include: {
+                    user_roles: {
+                        include: {
+                            role: true
+                        }
+                    }
+                }
+            }),
+            prisma.user.count({ where }),
+        ]);
+
+        return {
+            data: users,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            }
+        };
+    },
 };
 
 export default userRepository;

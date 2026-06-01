@@ -20,6 +20,7 @@ import notificationRoutes from "./presentation/routes/notification.routes";
 import livekitRoutes from "./presentation/routes/livekit.routes";
 import searchRoutes from "./presentation/routes/SearchRoutes/search.routes";
 import reportRoutes from "./presentation/routes/ReportRoutes/report.routes";
+import adminRoutes from "./presentation/routes/admin.routes";
 dotenv.config();
 
 // Initialize Express app
@@ -52,6 +53,7 @@ app.use("/api/categories", categoryRoutes);
 app.use("/api/roles", roleRoutes);
 app.use("/api/notifications", notificationRoutes);
 app.use("/api/livekit", livekitRoutes);
+app.use("/api/admin", adminRoutes);
 
 // TEST ROUTE FOR PRISMA
 app.get("/api/test-db", async (_req, res) => {

@@ -2,9 +2,11 @@ import { createBrowserRouter, Navigate } from "react-router-dom";
 import App from "../App";
 import { LoginPage } from "../features/auth/pages/LoginPage";
 import { RegisterPage } from "../features/auth/pages/RegisterPage";
+import { AdminDashboardPage } from "../features/admin/pages/AdminDashboardPage";
 import { HomeFeedPage } from "../features/feed/pages/HomeFeedPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";
 import { ReportsPage } from "../features/reports/pages/ReportsPage";
+
 export const router = createBrowserRouter([
   {
     path: "/",
@@ -31,9 +33,17 @@ export const router = createBrowserRouter([
         element: <ProfilePage />,
       },
       {
+        path: "profile/:userId",
+        element: <ProfilePage />,
+      },
+      {
+        path: "admin",
+        element: <AdminDashboardPage />,
+      },
+      {
         path: "reports",
         element: <ReportsPage />,
-},
+      },
     ],
   },
 ]);

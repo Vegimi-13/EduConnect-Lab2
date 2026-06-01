@@ -29,9 +29,9 @@ type ProfileEducationCardProps = {
   fields: FieldOfStudy[];
   isSaving: boolean;
   error?: string | null;
-  onAdd: (payload: CreateEducationRequest) => void;
-  onUpdate: (educationId: number, payload: UpdateEducationRequest) => void;
-  onDelete: (educationId: number) => void;
+  onAdd?: (payload: CreateEducationRequest) => void;
+  onUpdate?: (educationId: number, payload: UpdateEducationRequest) => void;
+  onDelete?: (educationId: number) => void;
 };
 
 function emptyDraft(): EducationDraft {
@@ -107,6 +107,8 @@ export function ProfileEducationCard({
   const [localError, setLocalError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
+  const canEdit = Boolean(onAdd && onUpdate && onDelete);
+
   const sortedEducation = useMemo(
     () =>
       [...education].sort(
@@ -117,6 +119,8 @@ export function ProfileEducationCard({
 
   function handleCreate(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!onAdd) return;
+
     const payload = toEducationPayload(createDraft);
 
     if (!payload) {
@@ -139,7 +143,7 @@ export function ProfileEducationCard({
   function handleEditSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
-    if (editingId === null) {
+    if (editingId === null || !onUpdate) {
       return;
     }
 
@@ -174,20 +178,22 @@ export function ProfileEducationCard({
           <GraduationCap className="size-5" />
           Education
         </h2>
-        <Button
-          type="button"
-          className="bg-[#073f43] text-white hover:bg-[#062f33]"
-          onClick={() => {
-            setLocalError(null);
-            setIsCreateOpen((current) => !current);
-          }}
-        >
-          <Plus className="size-4" />
-          {isCreateOpen ? "Close" : "Add Education"}
-        </Button>
+        {canEdit ? (
+          <Button
+            type="button"
+            className="bg-[#073f43] text-white hover:bg-[#062f33]"
+            onClick={() => {
+              setLocalError(null);
+              setIsCreateOpen((current) => !current);
+            }}
+          >
+            <Plus className="size-4" />
+            {isCreateOpen ? "Close" : "Add Education"}
+          </Button>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-5 px-5 pb-5">
-        {isCreateOpen ? (
+        {isCreateOpen && canEdit ? (
           <form
             className="grid gap-4 rounded-md border border-[#d6dde3] bg-[#f7fafc] p-4"
             onSubmit={handleCreate}
@@ -316,7 +322,7 @@ export function ProfileEducationCard({
 
               return (
                 <div key={item.id} className="py-5 first:pt-0">
-                  {isEditing ? (
+                  {isEditing && canEdit ? (
                     <form className="grid gap-3" onSubmit={handleEditSubmit}>
                       <div className="grid gap-3 md:grid-cols-2">
                         <label className="grid gap-2 text-sm font-medium">
@@ -472,26 +478,28 @@ export function ProfileEducationCard({
                             {item.description}
                           </p>
                         ) : null}
-                        <div className="mt-4 flex gap-2">
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleEditStart(item)}
-                          >
-                            <Pencil className="size-3.5" />
-                            Edit
-                          </Button>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => onDelete(item.id)}
-                          >
-                            <Trash2 className="size-3.5" />
-                            Remove
-                          </Button>
-                        </div>
+                        {canEdit ? (
+                          <div className="mt-4 flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleEditStart(item)}
+                            >
+                              <Pencil className="size-3.5" />
+                              Edit
+                            </Button>
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              onClick={() => onDelete?.(item.id)}
+                            >
+                              <Trash2 className="size-3.5" />
+                              Remove
+                            </Button>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   )}
@@ -500,7 +508,9 @@ export function ProfileEducationCard({
             })
           ) : (
             <p className="text-sm text-[#4b5563]">
-              Add your institutions, degree path, and specialization here.
+              {canEdit
+                ? "Add your institutions, degree path, and specialization here."
+                : "This student hasn't added any education details yet."}
             </p>
           )}
         </div>

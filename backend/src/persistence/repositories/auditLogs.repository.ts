@@ -38,6 +38,38 @@ const auditLogsRepository = {
             orderBy: { created_at: 'desc' },
         });
     },
+
+    async findMany(page: number = 1, limit: number = 10) {
+        const skip = (page - 1) * limit;
+        const [logs, total] = await prisma.$transaction([
+            prisma.auditLog.findMany({
+                skip,
+                take: limit,
+                orderBy: { created_at: 'desc' },
+                include: {
+                    user: {
+                        select: {
+                            id: true,
+                            first_name: true,
+                            last_name: true,
+                            email: true,
+                        }
+                    }
+                }
+            }),
+            prisma.auditLog.count(),
+        ]);
+
+        return {
+            data: logs,
+            meta: {
+                total,
+                page,
+                limit,
+                totalPages: Math.ceil(total / limit),
+            }
+        };
+    },
 };
 
 export default auditLogsRepository;

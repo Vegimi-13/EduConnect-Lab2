@@ -11,7 +11,7 @@ import {
 
 type ProfileHeroProps = {
   profile: StudentProfile;
-  onEdit: () => void;
+  onEdit?: () => void;
 };
 
 function CoverVisual() {
@@ -84,13 +84,15 @@ export function ProfileHero({ profile, onEdit }: ProfileHeroProps) {
               <Share2 className="size-4" />
               Share
             </Button>
-            <Button
-              className="h-11 bg-[#073f43] px-5 text-white hover:bg-[#062f33]"
-              onClick={onEdit}
-            >
-              <Edit3 className="size-4" />
-              Edit Profile
-            </Button>
+            {onEdit ? (
+              <Button
+                className="h-11 bg-[#073f43] px-5 text-white hover:bg-[#062f33]"
+                onClick={onEdit}
+              >
+                <Edit3 className="size-4" />
+                Edit Profile
+              </Button>
+            ) : null}
           </div>
         </div>
 

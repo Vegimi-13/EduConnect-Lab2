@@ -22,8 +22,8 @@ type ProfileCoursesCardProps = {
   availableCourses: CourseReference[];
   isSaving: boolean;
   error?: string | null;
-  onAdd: (payload: AddCourseRequest) => void;
-  onRemove: (courseId: number) => void;
+  onAdd?: (payload: AddCourseRequest) => void;
+  onRemove?: (courseId: number) => void;
 };
 
 const emptyDraft: CourseDraft = {
@@ -63,6 +63,8 @@ export function ProfileCoursesCard({
   const [localError, setLocalError] = useState<string | null>(null);
   const [isCreateOpen, setIsCreateOpen] = useState(false);
 
+  const canEdit = Boolean(onAdd && onRemove);
+
   const assignedCourseIds = useMemo(
     () => new Set(courses.map((course) => course.course_id)),
     [courses]
@@ -70,6 +72,7 @@ export function ProfileCoursesCard({
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (!onAdd) return;
 
     const courseId = Number(draft.course_id);
 
@@ -95,20 +98,22 @@ export function ProfileCoursesCard({
           <BookOpen className="size-5" />
           Courses
         </h2>
-        <Button
-          type="button"
-          className="bg-[#073f43] text-white hover:bg-[#062f33]"
-          onClick={() => {
-            setLocalError(null);
-            setIsCreateOpen((current) => !current);
-          }}
-        >
-          <Plus className="size-4" />
-          {isCreateOpen ? "Close" : "Add Course"}
-        </Button>
+        {canEdit ? (
+          <Button
+            type="button"
+            className="bg-[#073f43] text-white hover:bg-[#062f33]"
+            onClick={() => {
+              setLocalError(null);
+              setIsCreateOpen((current) => !current);
+            }}
+          >
+            <Plus className="size-4" />
+            {isCreateOpen ? "Close" : "Add Course"}
+          </Button>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-5 px-5 pb-5">
-        {isCreateOpen ? (
+        {isCreateOpen && canEdit ? (
           <form
             className="grid gap-4 rounded-md border border-[#d6dde3] bg-[#f7fafc] p-4"
             onSubmit={handleSubmit}
@@ -213,22 +218,26 @@ export function ProfileCoursesCard({
                 <p className="mt-3 text-xs font-semibold text-[#6b4a05]">
                   {getCourseMeta(course)}
                 </p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="mt-3 px-0 text-[#7a1d1d] hover:bg-transparent hover:text-[#5f1515]"
-                  onClick={() => onRemove(course.course_id)}
-                >
-                  <Trash2 className="size-3.5" />
-                  Remove
-                </Button>
+                {canEdit ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="mt-3 px-0 text-[#7a1d1d] hover:bg-transparent hover:text-[#5f1515]"
+                    onClick={() => onRemove?.(course.course_id)}
+                  >
+                    <Trash2 className="size-3.5" />
+                    Remove
+                  </Button>
+                ) : null}
               </div>
             ))}
           </div>
         ) : (
           <p className="text-sm text-[#4b5563]">
-            Add current or completed courses to make your academic path visible.
+            {canEdit
+              ? "Add current or completed courses to make your academic path visible."
+              : "This student hasn't added any courses yet."}
           </p>
         )}
       </CardContent>
