@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AppShell } from "@/components/layout/AppShell";
+import { useAuthStore } from "@/features/auth/store/authStore";
 import { profileApi } from "../api/profileApi";
 import { ProfileAboutCard } from "../components/ProfileAboutCard";
 import { ProfileCollaborativeCard } from "../components/ProfileCollaborativeCard";
@@ -18,11 +20,6 @@ import type {
   UpdateEducationRequest,
   UpdateProfileRequest,
 } from "../types/profile.types";
-
-const profileQueryKey = ["profile", "me"];
-const institutionsQueryKey = ["profile", "institutions"];
-const fieldsQueryKey = ["profile", "fields"];
-const coursesQueryKey = ["profile", "courses"];
 
 function ProfilePageSkeleton() {
   return (
@@ -48,31 +45,44 @@ function ProfilePageError({ message }: { message: string }) {
 }
 
 export function ProfilePage() {
+  const { userId } = useParams<{ userId: string }>();
   const queryClient = useQueryClient();
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileError, setProfileError] = useState<string | null>(null);
   const [skillsError, setSkillsError] = useState<string | null>(null);
   const [educationError, setEducationError] = useState<string | null>(null);
   const [coursesError, setCoursesError] = useState<string | null>(null);
 
+  const numericUserId = userId ? parseInt(userId, 10) : undefined;
+  const isOwnProfile = !userId || numericUserId === currentUserId;
+
+  const profileQueryKey = ["profile", userId || "me"];
+  const institutionsQueryKey = ["profile", "institutions"];
+  const fieldsQueryKey = ["profile", "fields"];
+  const coursesQueryKey = ["profile", "courses"];
+
   const profileQuery = useQuery({
     queryKey: profileQueryKey,
-    queryFn: profileApi.getMyProfile,
+    queryFn: () => (userId ? profileApi.getProfileById(numericUserId!) : profileApi.getMyProfile()),
   });
 
   const institutionsQuery = useQuery({
     queryKey: institutionsQueryKey,
     queryFn: profileApi.getInstitutions,
+    enabled: isOwnProfile,
   });
 
   const fieldsQuery = useQuery({
     queryKey: fieldsQueryKey,
     queryFn: profileApi.getFields,
+    enabled: isOwnProfile,
   });
 
   const courseCatalogQuery = useQuery({
     queryKey: coursesQueryKey,
     queryFn: profileApi.getCourses,
+    enabled: isOwnProfile,
   });
 
   const followersQuery = useQuery({
@@ -196,7 +206,7 @@ export function ProfilePage() {
         message={
           profileQuery.error instanceof Error
             ? profileQuery.error.message
-            : "We could not load the current profile."
+            : "We could not load the profile."
         }
       />
     );
@@ -219,8 +229,8 @@ export function ProfilePage() {
         skills={profile.skills}
         isSaving={addSkillMutation.isPending || removeSkillMutation.isPending}
         error={skillsError}
-        onAdd={(name) => addSkillMutation.mutate(name)}
-        onRemove={(skillId) => removeSkillMutation.mutate(skillId)}
+        onAdd={isOwnProfile ? (name) => addSkillMutation.mutate(name) : undefined}
+        onRemove={isOwnProfile ? (skillId) => removeSkillMutation.mutate(skillId) : undefined}
       />
       <ProfileLinksCard profile={profile} />
       <ProfileCollaborativeCard />
@@ -232,15 +242,15 @@ export function ProfilePage() {
       <div className="mx-auto max-w-[56rem] space-y-5">
         <ProfileHero
           profile={profile}
-          onEdit={() => {
+          onEdit={isOwnProfile ? () => {
             setProfileError(null);
             setIsEditingProfile(true);
-          }}
+          } : undefined}
         />
 
         <div className="grid gap-5 xl:hidden">{rightRail}</div>
 
-        {isEditingProfile ? (
+        {isEditingProfile && isOwnProfile ? (
           <ProfileEditPanel
             profile={profile}
             isSaving={updateProfileMutation.isPending}
@@ -262,11 +272,11 @@ export function ProfilePage() {
             deleteEducationMutation.isPending
           }
           error={educationError}
-          onAdd={(payload) => addEducationMutation.mutate(payload)}
-          onUpdate={(educationId, payload) =>
-            updateEducationMutation.mutate({ educationId, payload })
+          onAdd={isOwnProfile ? (payload) => addEducationMutation.mutate(payload) : undefined}
+          onUpdate={isOwnProfile ? (educationId, payload) =>
+            updateEducationMutation.mutate({ educationId, payload }) : undefined
           }
-          onDelete={(educationId) => deleteEducationMutation.mutate(educationId)}
+          onDelete={isOwnProfile ? (educationId) => deleteEducationMutation.mutate(educationId) : undefined}
         />
 
         <ProfileCoursesCard
@@ -274,8 +284,8 @@ export function ProfilePage() {
           availableCourses={courseCatalog}
           isSaving={addCourseMutation.isPending || removeCourseMutation.isPending}
           error={coursesError}
-          onAdd={(payload) => addCourseMutation.mutate(payload)}
-          onRemove={(courseId) => removeCourseMutation.mutate(courseId)}
+          onAdd={isOwnProfile ? (payload) => addCourseMutation.mutate(payload) : undefined}
+          onRemove={isOwnProfile ? (courseId) => removeCourseMutation.mutate(courseId) : undefined}
         />
       </div>
     </AppShell>

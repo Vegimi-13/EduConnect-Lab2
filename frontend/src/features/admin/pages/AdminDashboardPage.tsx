@@ -40,6 +40,7 @@ function hasStatus(error: unknown, status: number) {
 export function AdminDashboardPage() {
   const queryClient = useQueryClient();
   const [userQuery, setUserQuery] = useState("");
+  const [feedPage, setFeedPage] = useState(1);
   const [rolesError, setRolesError] = useState<string | null>(null);
   const [userRolesError, setUserRolesError] = useState<string | null>(null);
 
@@ -66,8 +67,8 @@ export function AdminDashboardPage() {
   });
 
   const feedQuery = useQuery({
-    queryKey: ["admin", "recent-feed"],
-    queryFn: adminApi.getRecentFeed,
+    queryKey: ["admin", "recent-feed", feedPage],
+    queryFn: () => adminApi.getRecentFeed(feedPage, 5),
   });
 
   const auditLogsQuery = useQuery({
@@ -256,6 +257,8 @@ export function AdminDashboardPage() {
           posts={recentPosts}
           isLoading={feedQuery.isLoading}
           onDeletePost={(postId) => deletePostMutation.mutate(postId)}
+          pagination={feedQuery.data?.meta}
+          onPageChange={setFeedPage}
         />
       </div>
     </AppShell>

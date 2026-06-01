@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Search, Trash2, UserCog } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -81,13 +82,18 @@ export function AdminUserRolesPanel({
               >
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex size-10 items-center justify-center rounded-md bg-[#0b5557] text-xs font-bold text-white">
-                      {getInitials(user)}
-                    </div>
+                    <Link to={`/profile/${user.id}`}>
+                      <div className="flex size-10 items-center justify-center rounded-md bg-[#0b5557] text-xs font-bold text-white shadow-sm hover:bg-[#084547]">
+                        {getInitials(user)}
+                      </div>
+                    </Link>
                     <div>
-                      <h3 className="font-semibold text-[#061f22]">
+                      <Link
+                        to={`/profile/${user.id}`}
+                        className="font-semibold text-[#061f22] hover:underline"
+                      >
                         {getUserName(user)}
-                      </h3>
+                      </Link>
                       <p className="text-sm text-[#4b5563]">{user.email}</p>
                     </div>
                   </div>

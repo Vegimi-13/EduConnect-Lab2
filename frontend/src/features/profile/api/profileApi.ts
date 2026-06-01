@@ -55,6 +55,10 @@ function getMyProfile() {
   return requestProfile(api.get<StudentProfile>("/profile/me"));
 }
 
+function getProfileById(userId: number) {
+  return requestProfile(api.get<StudentProfile>(`/profile/${userId}`));
+}
+
 function updateMyProfile(payload: UpdateProfileRequest) {
   return requestProfile(api.put<StudentProfile>("/profile/me", payload));
 }
@@ -119,6 +123,7 @@ function getFollowing(userId: number) {
 
 export const profileApi = {
   getMyProfile,
+  getProfileById,
   updateMyProfile,
   getInstitutions,
   getFields,

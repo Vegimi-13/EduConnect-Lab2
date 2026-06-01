@@ -17,6 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
+import { Link } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
@@ -424,11 +425,16 @@ function FeedPostCard({ post }: { post: FeedPost }) {
       <CardContent className="p-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex items-start gap-3">
-            <Avatar label={authorInitials} />
+            <Link to={`/profile/${post.user.id}`}>
+              <Avatar label={authorInitials} />
+            </Link>
             <div>
-              <h3 className="text-base font-semibold leading-tight text-[#101820]">
+              <Link
+                to={`/profile/${post.user.id}`}
+                className="text-base font-semibold leading-tight text-[#101820] hover:underline"
+              >
                 {authorName || "EduConnect User"}
-              </h3>
+              </Link>
               <p className="mt-1 text-xs font-bold uppercase text-[#173638]">
                 {authorMeta}
               </p>
@@ -607,19 +613,41 @@ function FeedPostCard({ post }: { post: FeedPost }) {
                 rootComments.map((comment) => (
                   <div key={comment.id} className="space-y-3">
                     <div className="flex gap-3">
-                      <Avatar
-                        label={getInitials(
-                          comment.user?.first_name,
-                          comment.user?.last_name,
-                          "ME"
-                        )}
-                        className="size-8 rounded-full bg-[#0b4f53]"
-                      />
+                      {comment.user ? (
+                        <Link to={`/profile/${comment.user.id}`}>
+                          <Avatar
+                            label={getInitials(
+                              comment.user?.first_name,
+                              comment.user?.last_name,
+                              "ME"
+                            )}
+                            className="size-8 rounded-full bg-[#0b4f53]"
+                          />
+                        </Link>
+                      ) : (
+                        <Avatar
+                          label={getInitials(
+                            comment.user?.first_name,
+                            comment.user?.last_name,
+                            "ME"
+                          )}
+                          className="size-8 rounded-full bg-[#0b4f53]"
+                        />
+                      )}
                       <div className="flex-1 rounded-md bg-[#f3f6fb] px-3 py-2">
                         <div className="flex items-center justify-between gap-3">
-                          <p className="text-sm font-semibold">
-                            {getCommentAuthor(comment)}
-                          </p>
+                          {comment.user ? (
+                            <Link
+                              to={`/profile/${comment.user.id}`}
+                              className="text-sm font-semibold hover:underline"
+                            >
+                              {getCommentAuthor(comment)}
+                            </Link>
+                          ) : (
+                            <p className="text-sm font-semibold">
+                              {getCommentAuthor(comment)}
+                            </p>
+                          )}
                           <span className="text-xs text-[#53676b]">
                             {formatPostTime(comment.created_at)}
                           </span>
@@ -641,19 +669,41 @@ function FeedPostCard({ post }: { post: FeedPost }) {
 
                     {(repliesByParent[comment.id] ?? []).map((reply) => (
                       <div key={reply.id} className="ml-11 flex gap-3">
-                        <Avatar
-                          label={getInitials(
-                            reply.user?.first_name,
-                            reply.user?.last_name,
-                            "ME"
-                          )}
-                          className="size-7 rounded-full bg-[#d8a44a]"
-                        />
+                        {reply.user ? (
+                          <Link to={`/profile/${reply.user.id}`}>
+                            <Avatar
+                              label={getInitials(
+                                reply.user?.first_name,
+                                reply.user?.last_name,
+                                "ME"
+                              )}
+                              className="size-7 rounded-full bg-[#d8a44a]"
+                            />
+                          </Link>
+                        ) : (
+                          <Avatar
+                            label={getInitials(
+                              reply.user?.first_name,
+                              reply.user?.last_name,
+                              "ME"
+                            )}
+                            className="size-7 rounded-full bg-[#d8a44a]"
+                          />
+                        )}
                         <div className="flex-1 rounded-md bg-[#f8fafc] px-3 py-2">
                           <div className="flex items-center justify-between gap-3">
-                            <p className="text-sm font-semibold">
-                              {getCommentAuthor(reply)}
-                            </p>
+                            {reply.user ? (
+                              <Link
+                                to={`/profile/${reply.user.id}`}
+                                className="text-sm font-semibold hover:underline"
+                              >
+                                {getCommentAuthor(reply)}
+                              </Link>
+                            ) : (
+                              <p className="text-sm font-semibold">
+                                {getCommentAuthor(reply)}
+                              </p>
+                            )}
                             <span className="text-xs text-[#53676b]">
                               {formatPostTime(reply.created_at)}
                             </span>

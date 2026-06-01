@@ -89,13 +89,13 @@ function removePermission(roleId: number, permissionId: number) {
   return requestAdmin(api.delete(`/roles/${roleId}/permissions/${permissionId}`));
 }
 
-function getRecentFeed() {
+function getRecentFeed(page: number = 1, limit: number = 5) {
   return requestAdmin(
     api.get<AdminFeedResponse>("/feed", {
       params: {
         scope: "all",
-        page: 1,
-        limit: 5,
+        page,
+        limit,
       },
     })
   );
