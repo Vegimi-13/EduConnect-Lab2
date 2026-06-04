@@ -9,11 +9,12 @@ const searchService = {
     );
     return users;
   },
-  async searchGroups(data: SearchQueryDtoType) {
+  async searchGroups(data: SearchQueryDtoType, viewerId: number) {
     const groups = await searchRepository.searchGroup(
       data.q,
       data.page,
       data.limit,
+      viewerId,
     );
     return groups;
   },

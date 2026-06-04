@@ -75,6 +75,43 @@ const messagingService = {
         return await messagingRepository.findMessagesByConversationId(conversation_id);
     },
 
+    async getOrCreateChannelConversation(user_id: number, group_channel_id: number) {
+        return await this.createConversation(user_id, {
+            type: 'channel',
+            group_channel_id,
+        });
+    },
+
+    async getChannelMessages(user_id: number, group_channel_id: number) {
+        const conversation = await this.getOrCreateChannelConversation(
+            user_id,
+            group_channel_id,
+        );
+        const messages = await this.getMessages(user_id, conversation.id);
+
+        return {
+            conversation,
+            messages,
+        };
+    },
+
+    async sendChannelMessage(
+        user_id: number,
+        group_channel_id: number,
+        data: CreateMessageDtoType,
+    ) {
+        const conversation = await this.getOrCreateChannelConversation(
+            user_id,
+            group_channel_id,
+        );
+        const message = await this.sendMessage(user_id, conversation.id, data);
+
+        return {
+            conversation,
+            message,
+        };
+    },
+
     async sendMessage(user_id: number, conversation_id: number, data: CreateMessageDtoType) {
         await this.ensureCanAccessConversation(user_id, conversation_id);
 

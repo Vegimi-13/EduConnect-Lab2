@@ -32,8 +32,8 @@ type AppShellProps = {
 
 const navItems = [
   { label: "Home Feed", icon: LayoutDashboard, to: "/feed" },
-  { label: "Explore", icon: Compass },
-  { label: "My Groups", icon: UsersRound },
+  { label: "Explore", icon: Compass, to: "/explore" },
+  { label: "My Groups", icon: UsersRound, to: "/my-groups" },
   { label: "Messages", icon: MessageSquare },
   { label: "Notifications", icon: Bell },
   { label: "Admin", icon: ShieldCheck, to: "/admin" },

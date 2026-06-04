@@ -14,7 +14,13 @@ const searchController = {
 
   async searchGroups(req: Request, res: Response, next: NextFunction) {
     try {
-      const groups = await searchService.searchGroups(getSearchQuery(req));
+      const user = req.user;
+      if (!user) return res.status(401).json({ message: "Unauthorized" });
+
+      const groups = await searchService.searchGroups(
+        getSearchQuery(req),
+        user.userId,
+      );
 
       res.status(200).json(groups);
     } catch (error) {

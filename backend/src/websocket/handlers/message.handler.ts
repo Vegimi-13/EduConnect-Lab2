@@ -7,6 +7,110 @@ export const messagingHandler = (io: Server, socket: Socket) => {
     console.log('messagingHandler called for user:', socket.data.user_id);
     const user_id = socket.data.user_id;
 
+    socket.on('join_channel', async (data: { channel_id: number }) => {
+        try {
+            const channelId = parsePositiveId(data.channel_id, 'channel_id');
+            const { conversation, messages } = await messagingService.getChannelMessages(
+                user_id,
+                channelId,
+            );
+
+            socket.join(`conversation:${conversation.id}`);
+            console.log(`User ${user_id} joined channel ${channelId}`);
+            socket.emit('channel_joined', {
+                channel_id: channelId,
+                conversation_id: conversation.id,
+                messages,
+            });
+        } catch (error: any) {
+            console.log('join_channel error:', error.message);
+            socket.emit('exception', error.message);
+        }
+    });
+
+    socket.on('leave_channel', async (data: { channel_id: number }) => {
+        try {
+            const channelId = parsePositiveId(data.channel_id, 'channel_id');
+            const conversation = await messagingService.getOrCreateChannelConversation(
+                user_id,
+                channelId,
+            );
+
+            socket.leave(`conversation:${conversation.id}`);
+            console.log(`User ${user_id} left channel ${channelId}`);
+            socket.emit('channel_left', {
+                channel_id: channelId,
+                conversation_id: conversation.id,
+            });
+        } catch (error: any) {
+            console.log('leave_channel error:', error.message);
+            socket.emit('exception', error.message);
+        }
+    });
+
+    socket.on('send_channel_message', async (data: { channel_id: number; content: string; message_type?: MessageType; reply_to_message_id?: number }) => {
+        try {
+            const channelId = parsePositiveId(data.channel_id, 'channel_id');
+            const { conversation, message } = await messagingService.sendChannelMessage(
+                user_id,
+                channelId,
+                {
+                    content: data.content,
+                    message_type: data.message_type || 'text',
+                    reply_to_message_id: data.reply_to_message_id,
+                },
+            );
+
+            io.to(`conversation:${conversation.id}`).emit('new_channel_message', {
+                channel_id: channelId,
+                conversation_id: conversation.id,
+                message,
+            });
+            io.to(`conversation:${conversation.id}`).emit('new_message', message);
+        } catch (error: any) {
+            console.log('send_channel_message error:', error.message);
+            socket.emit('exception', error.message);
+        }
+    });
+
+    socket.on('channel_typing', async (data: { channel_id: number }) => {
+        try {
+            const channelId = parsePositiveId(data.channel_id, 'channel_id');
+            const conversation = await messagingService.getOrCreateChannelConversation(
+                user_id,
+                channelId,
+            );
+
+            socket.to(`conversation:${conversation.id}`).emit('channel_user_typing', {
+                user_id,
+                channel_id: channelId,
+                conversation_id: conversation.id,
+            });
+        } catch (error: any) {
+            console.log('channel_typing error:', error.message);
+            socket.emit('exception', error.message);
+        }
+    });
+
+    socket.on('channel_stop_typing', async (data: { channel_id: number }) => {
+        try {
+            const channelId = parsePositiveId(data.channel_id, 'channel_id');
+            const conversation = await messagingService.getOrCreateChannelConversation(
+                user_id,
+                channelId,
+            );
+
+            socket.to(`conversation:${conversation.id}`).emit('channel_user_stop_typing', {
+                user_id,
+                channel_id: channelId,
+                conversation_id: conversation.id,
+            });
+        } catch (error: any) {
+            console.log('channel_stop_typing error:', error.message);
+            socket.emit('exception', error.message);
+        }
+    });
+
     socket.on('join_conversation', async (data: { conversation_id: number }) => {
         try {
             const parsed = Number(data.conversation_id);
@@ -99,3 +203,13 @@ export const messagingHandler = (io: Server, socket: Socket) => {
         console.log(`User ${user_id} disconnected`);
     });
 };
+
+function parsePositiveId(value: number, fieldName: string) {
+    const parsed = Number(value);
+
+    if (!Number.isInteger(parsed) || parsed <= 0) {
+        throw new Error(`${fieldName} must be a positive integer`);
+    }
+
+    return parsed;
+}
