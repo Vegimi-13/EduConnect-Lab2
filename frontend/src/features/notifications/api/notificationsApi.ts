@@ -30,12 +30,12 @@ async function getUnreadCount(): Promise<{ count: number }> {
 }
 
 async function acceptFollowRequest(notificationId: number, senderId: number): Promise<void> {
-  await api.post(`/follow/${senderId}/accept`);
+  await api.put(`/follow/${senderId}/accept`);
   await markAsRead({ notificationIds: [notificationId] });
 }
 
 async function declineFollowRequest(notificationId: number, senderId: number): Promise<void> {
-  await api.post(`/follow/${senderId}/decline`);
+  await api.put(`/follow/${senderId}/reject`);
   await markAsRead({ notificationIds: [notificationId] });
 }
 

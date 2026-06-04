@@ -2,7 +2,6 @@ import {
   Bell,
   Check,
   CheckCheck,
-  FileText,
   Heart,
   MessageSquare,
   UserCheck,
@@ -51,25 +50,25 @@ function getSenderMeta(n: Notification) {
 const notificationIconMap: Record<NotificationType, React.ElementType> = {
   FOLLOW_REQUEST: UserPlus,
   FOLLOW_ACCEPTED: UserCheck,
-  POST_LIKE: Heart,
+  POST_REACTION: Heart,
   POST_COMMENT: MessageSquare,
-  COMMENT_REPLY: MessageSquare,
-  MENTION: MessageSquare,
-  GROUP_INVITE: Users,
-  GROUP_POST: FileText,
-  SYSTEM: Bell,
+  COMMENT_REACTION: Heart,
+  GROUP_JOIN_REQUEST: Users,
+  GROUP_JOIN_ACCEPTED: UserCheck,
+  GROUP_JOIN_REJECTED: Users,
+  MESSAGE: MessageSquare,
 };
 
 const notificationColorMap: Record<NotificationType, string> = {
   FOLLOW_REQUEST: "bg-blue-100 text-blue-600",
   FOLLOW_ACCEPTED: "bg-green-100 text-green-600",
-  POST_LIKE: "bg-red-100 text-red-500",
+  POST_REACTION: "bg-red-100 text-red-500",
   POST_COMMENT: "bg-teal-100 text-teal-600",
-  COMMENT_REPLY: "bg-teal-100 text-teal-600",
-  MENTION: "bg-purple-100 text-purple-600",
-  GROUP_INVITE: "bg-orange-100 text-orange-500",
-  GROUP_POST: "bg-yellow-100 text-yellow-600",
-  SYSTEM: "bg-gray-100 text-gray-500",
+  COMMENT_REACTION: "bg-red-100 text-red-400",
+  GROUP_JOIN_REQUEST: "bg-orange-100 text-orange-500",
+  GROUP_JOIN_ACCEPTED: "bg-green-100 text-green-600",
+  GROUP_JOIN_REJECTED: "bg-gray-100 text-gray-500",
+  MESSAGE: "bg-purple-100 text-purple-600",
 };
 
 // ─── Avatar ─────────────────────────────────────────────────────────────────
@@ -110,13 +109,18 @@ function NotificationItem({
   onMarkRead,
   onAccept,
   onDecline,
+  isAccepting,
+  isDeclining,
 }: {
   notification: Notification;
   onMarkRead: (id: number) => void;
   onAccept: (notifId: number, senderId: number) => void;
   onDecline: (notifId: number, senderId: number) => void;
+  isAccepting: boolean;
+  isDeclining: boolean;
 }) {
   const isFollowRequest = notification.type === "FOLLOW_REQUEST";
+  const isActing = isAccepting || isDeclining;
 
   return (
     <div
@@ -159,23 +163,32 @@ function NotificationItem({
           </div>
         </div>
 
-        {isFollowRequest && notification.sender && (
+        {/* Follow request actions — only shown while not yet handled (unread) */}
+        {isFollowRequest && notification.sender && !isAccepting && !isDeclining && (
           <div className="mt-2.5 flex gap-2">
             <Button
               size="sm"
               className="h-8 bg-[#073f43] px-4 text-xs text-white hover:bg-[#062f33]"
               onClick={() => onAccept(notification.id, notification.sender!.id)}
+              disabled={isActing}
             >
-              <Check className="size-3.5" />
-              Accept
+              {isAccepting ? (
+                <span className="animate-pulse">Accepting…</span>
+              ) : (
+                <>
+                  <Check className="size-3.5" />
+                  Accept
+                </>
+              )}
             </Button>
             <Button
               size="sm"
               variant="outline"
               className="h-8 px-4 text-xs"
               onClick={() => onDecline(notification.id, notification.sender!.id)}
+              disabled={isActing}
             >
-              Decline
+              {isDeclining ? <span className="animate-pulse">Declining…</span> : "Decline"}
             </Button>
           </div>
         )}
@@ -263,6 +276,8 @@ function EmptyState({ tab }: { tab: Tab }) {
 
 export function NotificationsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("all");
+  // Track which notification IDs are currently being acted on
+  const [actingOn, setActingOn] = useState<Record<number, "accepting" | "declining">>({});
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -288,7 +303,12 @@ export function NotificationsPage() {
   const acceptMutation = useMutation({
     mutationFn: ({ notifId, senderId }: { notifId: number; senderId: number }) =>
       notificationsApi.acceptFollowRequest(notifId, senderId),
-    onSuccess: () => {
+    onSettled: (_data, _err, { notifId }) => {
+      setActingOn((prev) => {
+        const next = { ...prev };
+        delete next[notifId];
+        return next;
+      });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
@@ -296,15 +316,22 @@ export function NotificationsPage() {
   const declineMutation = useMutation({
     mutationFn: ({ notifId, senderId }: { notifId: number; senderId: number }) =>
       notificationsApi.declineFollowRequest(notifId, senderId),
-    onSuccess: () => {
+    onSettled: (_data, _err, { notifId }) => {
+      setActingOn((prev) => {
+        const next = { ...prev };
+        delete next[notifId];
+        return next;
+      });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
     },
   });
 
   const allNotifications = data?.data ?? [];
   const unreadCount = data?.meta?.unreadCount ?? 0;
-  const requestNotifications = allNotifications.filter(
-    (n) => n.type === "FOLLOW_REQUEST"
+
+  // Only count UNREAD follow requests for the badge — handled ones are already read
+  const pendingRequests = allNotifications.filter(
+    (n) => n.type === "FOLLOW_REQUEST" && !n.is_read
   );
 
   const visibleNotifications =
@@ -312,17 +339,19 @@ export function NotificationsPage() {
       ? allNotifications
       : activeTab === "unread"
       ? allNotifications.filter((n) => !n.is_read)
-      : requestNotifications;
+      : allNotifications.filter((n) => n.type === "FOLLOW_REQUEST"); // show all requests (read + unread) in the Requests tab
 
   function handleMarkRead(id: number) {
     markReadMutation.mutate([id]);
   }
 
   function handleAccept(notifId: number, senderId: number) {
+    setActingOn((prev) => ({ ...prev, [notifId]: "accepting" }));
     acceptMutation.mutate({ notifId, senderId });
   }
 
   function handleDecline(notifId: number, senderId: number) {
+    setActingOn((prev) => ({ ...prev, [notifId]: "declining" }));
     declineMutation.mutate({ notifId, senderId });
   }
 
@@ -356,7 +385,7 @@ export function NotificationsPage() {
           active={activeTab}
           onChange={setActiveTab}
           unreadCount={unreadCount}
-          requestCount={requestNotifications.length}
+          requestCount={pendingRequests.length}  // ← only unread/pending requests
         />
 
         {/* List */}
@@ -385,6 +414,8 @@ export function NotificationsPage() {
                     onMarkRead={handleMarkRead}
                     onAccept={handleAccept}
                     onDecline={handleDecline}
+                    isAccepting={actingOn[notification.id] === "accepting"}
+                    isDeclining={actingOn[notification.id] === "declining"}
                   />
                 ))}
               </div>

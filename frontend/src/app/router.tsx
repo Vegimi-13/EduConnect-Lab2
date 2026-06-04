@@ -9,6 +9,7 @@ import { MyGroupsPage } from "../features/groups/pages/MyGroupsPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";
 import { ReportsPage } from "../features/reports/pages/ReportsPage";
 import { NotificationsPage } from "../features/notifications/pages/NotificationsPage";
+import { MessagesPage } from "@/features/messages/pages/MessagesPage";
 
 export const router = createBrowserRouter([
   {
@@ -59,6 +60,10 @@ export const router = createBrowserRouter([
         path: "notifications",
         element: <NotificationsPage />,
       },
+      {
+        path: "messages",
+        element: <MessagesPage />
+      }
     ],
   },
 ]);

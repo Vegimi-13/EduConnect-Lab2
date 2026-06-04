@@ -45,6 +45,7 @@ const followService = {
 
     await notificationService.notify({
       user_id: targetUserId,
+      sender_id: currentUserId,
       type: status === "accepted" ? "FOLLOW_ACCEPTED" : "FOLLOW_REQUEST",
       title: status === "accepted" ? "New follower" : "New follow request",
       message:
@@ -89,6 +90,7 @@ const followService = {
 
     await notificationService.notify({
       user_id: requesterId,
+      sender_id: currentUserId,
       type: "FOLLOW_ACCEPTED",
       title: "Follow request accepted",
       message: `${actorName} accepted your follow request.`,

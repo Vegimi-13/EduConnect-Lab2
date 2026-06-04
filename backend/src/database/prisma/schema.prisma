@@ -22,7 +22,8 @@ model User {
   user_roles                     UserRole[]
   refresh_tokens                 RefreshToken[]
   audit_logs                     AuditLog[]
-  notifications                  Notification[]
+  receivedNotifications  Notification[]  @relation("NotificationRecipient")
+  sentNotifications      Notification[]  @relation("NotificationSender")
   uploaded_files                 File[]
 
   educations                     Education[]
@@ -141,13 +142,15 @@ model AuditLog {
 model Notification {
   id          Int       @id @default(autoincrement())
   user_id     Int
+  sender_id   Int?
   type        String
   title       String?
   message     String?
   is_read     Boolean   @default(false)
   created_at  DateTime  @default(now())
 
-  user        User      @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  user        User      @relation("NotificationRecipient",fields: [user_id], references: [id], onDelete: Cascade)
+  sender      User?     @relation("NotificationSender", fields: [sender_id], references: [id], onDelete: SetNull)
 
   @@map("notifications")
 }

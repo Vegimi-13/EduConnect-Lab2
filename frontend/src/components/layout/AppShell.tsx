@@ -181,7 +181,7 @@ export function AppShell({
           </div>
         </aside>
 
-        <section className="overflow-y-auto px-4 py-4 sm:px-5 xl:px-10">
+        <section className="overflow-y-auto px-2 sm:px-5 xl:px-10">
           {children}
         </section>
 

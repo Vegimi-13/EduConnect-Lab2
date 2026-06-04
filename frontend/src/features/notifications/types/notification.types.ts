@@ -1,13 +1,13 @@
 export type NotificationType =
   | "FOLLOW_REQUEST"
   | "FOLLOW_ACCEPTED"
-  | "POST_LIKE"
+  | "GROUP_JOIN_REQUEST"
+  | "GROUP_JOIN_ACCEPTED"
+  | "GROUP_JOIN_REJECTED"
   | "POST_COMMENT"
-  | "COMMENT_REPLY"
-  | "MENTION"
-  | "GROUP_INVITE"
-  | "GROUP_POST"
-  | "SYSTEM";
+  | "POST_REACTION"
+  | "COMMENT_REACTION"
+  | "MESSAGE";
 
 export type Notification = {
   id: number;

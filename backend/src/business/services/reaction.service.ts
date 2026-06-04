@@ -38,6 +38,7 @@ const reactionService = {
 
       await notificationService.notify({
         user_id: targetOwnerId,
+        sender_id: user_id,                // ← fixed: pass sender
         type: data.target_type === "POST" ? "POST_REACTION" : "COMMENT_REACTION",
         title: "New reaction",
         message: `${actorName} reacted with ${data.reaction_type.toLowerCase()} to your ${data.target_type.toLowerCase()}.`,

@@ -11,29 +11,48 @@ const notificationController = {
         query.unread,
       );
 
-      res.status(200).json(notifications);
+      const unreadCount = notifications.filter((n) => !n.is_read).length;
+
+      // Shape the response to match the frontend's NotificationsResponse type
+      res.status(200).json({
+        data: notifications,
+        meta: {
+          page: 1,
+          limit: notifications.length,
+          total: notifications.length,
+          totalPages: 1,
+          hasNextPage: false,
+          unreadCount,
+        },
+      });
     } catch (error) {
       next(error);
     }
   },
 
+  // PATCH /notifications/read  — matches frontend's markAsRead & markAllAsRead calls
   async markAsRead(req: Request, res: Response, next: NextFunction) {
     try {
-      const notification = await notificationService.markAsRead(
-        req.user.userId,
-        Number(req.params.id),
-      );
+      const { notificationIds, all } = req.body as {
+        notificationIds?: number[];
+        all?: boolean;
+      };
 
-      res.status(200).json(notification);
-    } catch (error) {
-      next(error);
-    }
-  },
+      if (all) {
+        const result = await notificationService.markAllAsRead(req.user.userId);
+        return res.status(200).json(result);
+      }
 
-  async markAllAsRead(req: Request, res: Response, next: NextFunction) {
-    try {
-      const result = await notificationService.markAllAsRead(req.user.userId);
-      res.status(200).json(result);
+      if (notificationIds?.length) {
+        const updated = await Promise.all(
+          notificationIds.map((id) =>
+            notificationService.markAsRead(req.user.userId, id)
+          )
+        );
+        return res.status(200).json(updated);
+      }
+
+      res.status(400).json({ message: "Provide notificationIds or all: true" });
     } catch (error) {
       next(error);
     }

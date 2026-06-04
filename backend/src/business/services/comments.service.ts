@@ -8,7 +8,6 @@ import {
 } from "../dto/Feed/comments.dto";
 
 const commentService = {
-  // ─── CREATE COMMENT ─────────────────────
   async getCommentsByPost(postId: number) {
     const post = await postRepository.findActiveById(postId);
 
@@ -24,24 +23,19 @@ const commentService = {
     postId: number,
     data: CreateCommentDtoType
   ) {
-    //  1. Check post exists
     const post = await postRepository.findActiveById(postId);
 
     if (!post) {
       throw new Error("Post not found");
     }
 
-    //  2. If reply → validate parent
     if (data.parent_comment_id !== undefined) {
-      const parent = await commentRepository.findById(
-        data.parent_comment_id
-      );
+      const parent = await commentRepository.findById(data.parent_comment_id);
 
       if (!parent || parent.is_deleted) {
         throw new Error("Parent comment not found");
       }
 
-      // 🔥 IMPORTANT: ensure same post
       if (parent.post_id !== postId) {
         throw new Error("Invalid parent comment (different post)");
       }
@@ -57,6 +51,7 @@ const commentService = {
 
       await notificationService.notify({
         user_id: post.user_id,
+        sender_id: user_id,              // ← fixed: pass sender
         type: "POST_COMMENT",
         title: "New comment",
         message: `${actorName} commented: ${preview(data.content)}`,
@@ -66,7 +61,6 @@ const commentService = {
     return comment;
   },
 
-  // ─── UPDATE COMMENT ─────────────────────
   async updateComment(
     user_id: number,
     commentId: number,
@@ -78,7 +72,6 @@ const commentService = {
       throw new Error("Comment not found");
     }
 
-    // 🔥 Ownership check
     if (comment.user_id !== user_id) {
       throw new Error("Unauthorized");
     }
@@ -90,7 +83,6 @@ const commentService = {
     });
   },
 
-  // ─── DELETE COMMENT (SOFT) ──────────────
   async deleteComment(user_id: number, commentId: number) {
     const comment = await commentRepository.findById(commentId);
 
@@ -98,7 +90,6 @@ const commentService = {
       throw new Error("Comment not found");
     }
 
-    // 🔥 Ownership check
     if (comment.user_id !== user_id) {
       throw new Error("Unauthorized");
     }

@@ -6,14 +6,13 @@ import { NotificationIdParamDto } from "../../business/dto/notifications.dto";
 
 const router = Router();
 
+// GET  /notifications          — fetch all notifications
 router.get("/", authenticate, notificationController.getMyNotifications);
-router.put("/read-all", authenticate, notificationController.markAllAsRead);
-router.put(
-  "/:id/read",
-  authenticate,
-  validateParams(NotificationIdParamDto),
-  notificationController.markAsRead,
-);
+
+// PATCH /notifications/read    — mark one or all as read (frontend sends { notificationIds: [] } or { all: true })
+router.patch("/read", authenticate, notificationController.markAsRead);
+
+// DELETE /notifications/:id
 router.delete(
   "/:id",
   authenticate,

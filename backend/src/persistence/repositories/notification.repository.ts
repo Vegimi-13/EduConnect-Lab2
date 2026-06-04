@@ -3,15 +3,34 @@ import type { NotificationType } from "../../shared/constants/enum";
 
 type CreateNotificationData = {
   user_id: number;
+  sender_id?: number;        // ← added
   type: NotificationType;
   title?: string;
   message?: string;
 };
 
+// Reusable include so sender data is always shaped the same way
+const notificationInclude = {
+  sender: {
+    select: {
+      id: true,
+      first_name: true,
+      last_name: true,
+      email: true,
+      profile: {
+        select: {
+          headline: true,
+        },
+      },
+    },
+  },
+} as const;
+
 const notificationRepository = {
   async create(data: CreateNotificationData) {
     return prisma.notification.create({
       data,
+      include: notificationInclude,  
     });
   },
 
@@ -22,12 +41,14 @@ const notificationRepository = {
         ...(onlyUnread && { is_read: false }),
       },
       orderBy: { created_at: "desc" },
+      include: notificationInclude,  
     });
   },
 
   async findById(id: number) {
     return prisma.notification.findUnique({
       where: { id },
+      include: notificationInclude,
     });
   },
 
@@ -35,16 +56,20 @@ const notificationRepository = {
     return prisma.notification.update({
       where: { id },
       data: { is_read: true },
+      include: notificationInclude,
     });
   },
 
   async markAllAsRead(user_id: number) {
-    return prisma.notification.updateMany({
-      where: {
-        user_id,
-        is_read: false,
-      },
+    
+    await prisma.notification.updateMany({
+      where: { user_id, is_read: false },
       data: { is_read: true },
+    });
+    return prisma.notification.findMany({
+      where: { user_id },
+      orderBy: { created_at: "desc" },
+      include: notificationInclude,
     });
   },
 
