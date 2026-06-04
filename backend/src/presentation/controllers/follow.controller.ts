@@ -110,6 +110,23 @@ const followController = {
     }
   },
 
+  async getFollowStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = req.user;
+ 
+      if (!user) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+ 
+      const targetUserId = Number(req.params.userId);
+      const result = await followService.getFollowStatus(user.userId, targetUserId);
+ 
+      res.status(200).json(result);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getPendingRequests(req: Request, res: Response, next: NextFunction) {
     try {
       const user = req.user;

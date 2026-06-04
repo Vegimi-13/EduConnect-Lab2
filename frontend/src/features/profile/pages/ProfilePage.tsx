@@ -242,6 +242,7 @@ export function ProfilePage() {
       <div className="mx-auto max-w-[56rem] space-y-5">
         <ProfileHero
           profile={profile}
+          isOwnProfile={isOwnProfile}
           onEdit={isOwnProfile ? () => {
             setProfileError(null);
             setIsEditingProfile(true);

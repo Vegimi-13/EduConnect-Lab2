@@ -8,6 +8,7 @@ import { HomeFeedPage } from "../features/feed/pages/HomeFeedPage";
 import { MyGroupsPage } from "../features/groups/pages/MyGroupsPage";
 import { ProfilePage } from "../features/profile/pages/ProfilePage";
 import { ReportsPage } from "../features/reports/pages/ReportsPage";
+import { NotificationsPage } from "../features/notifications/pages/NotificationsPage";
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +54,10 @@ export const router = createBrowserRouter([
       {
         path: "reports",
         element: <ReportsPage />,
+      },
+      {
+        path: "notifications",
+        element: <NotificationsPage />,
       },
     ],
   },

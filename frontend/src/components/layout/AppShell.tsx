@@ -34,8 +34,8 @@ const navItems = [
   { label: "Home Feed", icon: LayoutDashboard, to: "/feed" },
   { label: "Explore", icon: Compass, to: "/explore" },
   { label: "My Groups", icon: UsersRound, to: "/my-groups" },
-  { label: "Messages", icon: MessageSquare },
-  { label: "Notifications", icon: Bell },
+  { label: "Messages", icon: MessageSquare, to: "/messages" },
+  { label: "Notifications", icon: Bell, to: "/notifications" },
   { label: "Admin", icon: ShieldCheck, to: "/admin" },
   { label: "Profile", icon: UserRound, to: "/profile" },
 ];
@@ -155,24 +155,11 @@ export function AppShell({
                   : "text-[#263336] hover:bg-white/60"
               }`;
 
-              if (item.to) {
-                return (
-                  <NavLink key={item.label} to={item.to} className={className}>
-                    <Icon className="size-4" />
-                    {item.label}
-                  </NavLink>
-                );
-              }
-
               return (
-                <button
-                  key={item.label}
-                  className={className}
-                  type="button"
-                >
+                <NavLink key={item.label} to={item.to} className={className}>
                   <Icon className="size-4" />
                   {item.label}
-                </button>
+                </NavLink>
               );
             })}
           </nav>

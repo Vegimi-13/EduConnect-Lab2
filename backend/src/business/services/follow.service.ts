@@ -125,6 +125,17 @@ const followService = {
   async getPendingRequests(currentUserId: number) {
     return followRepository.getPendingRequests(currentUserId);
   },
+
+  async getFollowStatus(
+    currentUserId: number,
+    targetUserId: number,
+  ): Promise<{ status: "not_following" | "pending" | "following" }> {
+    const follow = await followRepository.findFollow(currentUserId, targetUserId);
+ 
+    if (!follow) return { status: "not_following" };
+    if (follow.status === "accepted") return { status: "following" };
+    return { status: "pending" };
+  },
 };
 
 export default followService;

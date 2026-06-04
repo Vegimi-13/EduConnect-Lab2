@@ -1,7 +1,9 @@
-import { Edit3, ExternalLink, MapPin, Share2 } from "lucide-react";
+import { Edit3, ExternalLink, MapPin, Share2, UserCheck, UserMinus, UserPlus, Clock } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { followApi } from "@/features/follow/api/followApi";
 import type { StudentProfile } from "../types/profile.types";
 import {
   getProfileHeadline,
@@ -12,6 +14,7 @@ import {
 type ProfileHeroProps = {
   profile: StudentProfile;
   onEdit?: () => void;
+  isOwnProfile?: boolean;
 };
 
 function CoverVisual() {
@@ -40,7 +43,79 @@ function ProfileAvatar({ label }: { label: string }) {
   );
 }
 
-export function ProfileHero({ profile, onEdit }: ProfileHeroProps) {
+function FollowButton({ userId, profileVisibility }: { userId: number; profileVisibility?: string | null }) {
+  const queryClient = useQueryClient();
+  const queryKey = ["follow", "status", userId];
+
+  const { data, isLoading } = useQuery({
+    queryKey,
+    queryFn: () => followApi.getFollowStatus(userId),
+    retry: false,
+  });
+
+  const followMutation = useMutation({
+    mutationFn: () => followApi.followUser(userId),
+    onSuccess: () => {
+      // Optimistically update the status based on profile visibility
+      const newStatus = profileVisibility === "private" ? "pending" : "following";
+      queryClient.setQueryData(queryKey, { status: newStatus });
+      // Refresh followers count
+      queryClient.invalidateQueries({ queryKey: ["follow", "followers", userId] });
+    },
+  });
+
+  const unfollowMutation = useMutation({
+    mutationFn: () => followApi.unfollowUser(userId),
+    onSuccess: () => {
+      queryClient.setQueryData(queryKey, { status: "not_following" });
+      queryClient.invalidateQueries({ queryKey: ["follow", "followers", userId] });
+    },
+  });
+
+  const isPending = followMutation.isPending || unfollowMutation.isPending || isLoading;
+  const status = data?.status ?? "not_following";
+
+  if (status === "following") {
+    return (
+      <Button
+        variant="outline"
+        className="h-11 gap-2 px-5 border-[#073f43] text-[#073f43] hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+        disabled={isPending}
+        onClick={() => unfollowMutation.mutate()}
+      >
+        <UserCheck className="size-4" />
+        Following
+      </Button>
+    );
+  }
+
+  if (status === "pending") {
+    return (
+      <Button
+        variant="outline"
+        className="h-11 gap-2 px-5 border-amber-400 text-amber-700 hover:bg-red-50 hover:border-red-300 hover:text-red-600 transition-colors"
+        disabled={isPending}
+        onClick={() => unfollowMutation.mutate()}
+      >
+        <Clock className="size-4" />
+        Requested
+      </Button>
+    );
+  }
+
+  return (
+    <Button
+      className="h-11 gap-2 bg-[#073f43] px-5 text-white hover:bg-[#062f33]"
+      disabled={isPending}
+      onClick={() => followMutation.mutate()}
+    >
+      <UserPlus className="size-4" />
+      {profileVisibility === "private" ? "Request to Follow" : "Follow"}
+    </Button>
+  );
+}
+
+export function ProfileHero({ profile, onEdit, isOwnProfile = false }: ProfileHeroProps) {
   const website = profile.website_url?.trim();
 
   return (
@@ -84,7 +159,7 @@ export function ProfileHero({ profile, onEdit }: ProfileHeroProps) {
               <Share2 className="size-4" />
               Share
             </Button>
-            {onEdit ? (
+            {isOwnProfile && onEdit ? (
               <Button
                 className="h-11 bg-[#073f43] px-5 text-white hover:bg-[#062f33]"
                 onClick={onEdit}
@@ -92,6 +167,12 @@ export function ProfileHero({ profile, onEdit }: ProfileHeroProps) {
                 <Edit3 className="size-4" />
                 Edit Profile
               </Button>
+            ) : null}
+            {!isOwnProfile ? (
+              <FollowButton
+                userId={profile.user_id}
+                profileVisibility={profile.visibility}
+              />
             ) : null}
           </div>
         </div>
