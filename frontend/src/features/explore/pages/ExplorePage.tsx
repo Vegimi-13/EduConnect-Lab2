@@ -6,11 +6,12 @@ import {
   Search,
   Send,
   Sparkles,
+  UserRound,
   UsersRound,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { AppShell } from "@/components/layout/AppShell";
@@ -21,12 +22,18 @@ import { feedApi } from "@/features/feed/api/feedApi";
 import type { FeedPost } from "@/features/feed/types/feed.types";
 import { groupsApi } from "@/features/groups/api/groupsApi";
 import type { ExploreGroup } from "@/features/groups/types/groups.types";
+import { searchApi, type SearchUser } from "../api/searchApi";
 
-type ExploreMode = "groups" | "posts";
+type ExploreMode = "groups" | "users" | "posts";
 type GroupVisibilityFilter = "all" | "public" | "private";
 
 const EMPTY_GROUPS: ExploreGroup[] = [];
 const EMPTY_POSTS: FeedPost[] = [];
+const EMPTY_USERS: SearchUser[] = [];
+
+function toExploreMode(value: string | null): ExploreMode {
+  return value === "users" || value === "posts" ? value : "groups";
+}
 
 function getInitials(value: string) {
   return value
@@ -97,7 +104,13 @@ function ExploreHero({
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#53676b]" />
             <Input
               className="h-10 border-[#b8c4c7] bg-[#edf3fb] pl-10"
-              placeholder="Search groups, research topics, or posts"
+              placeholder={
+                mode === "groups"
+                  ? "Search groups"
+                  : mode === "users"
+                    ? "Search peers"
+                    : "Search posts"
+              }
               type="search"
               value={searchDraft}
               onChange={(event) => onSearchDraftChange(event.target.value)}
@@ -111,6 +124,7 @@ function ExploreHero({
         <div className="flex flex-wrap gap-2">
           {([
             { value: "groups", label: "Available groups", icon: UsersRound },
+            { value: "users", label: "Peers", icon: UserRound },
             { value: "posts", label: "Posts", icon: MessageSquare },
           ] as const).map((item) => {
             const Icon = item.icon;
@@ -412,6 +426,82 @@ function PostsExplore({
   );
 }
 
+function UserCard({ user }: { user: SearchUser }) {
+  const name = `${user.first_name} ${user.last_name}`.trim() || user.email;
+
+  return (
+    <Card className="border-[#b8c4c7] bg-white">
+      <CardContent className="flex items-center justify-between gap-4 p-5">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex size-11 shrink-0 items-center justify-center rounded-md bg-[#073f43] text-xs font-bold text-white">
+            {getInitials(name) || "EC"}
+          </div>
+          <div className="min-w-0">
+            <h2 className="truncate text-base font-bold text-[#061f22]">{name}</h2>
+            <p className="truncate text-xs font-medium text-[#53676b]">{user.email}</p>
+          </div>
+        </div>
+        <Button asChild variant="outline" className="shrink-0">
+          <Link to={`/profile/${user.id}`}>View profile</Link>
+        </Button>
+      </CardContent>
+    </Card>
+  );
+}
+
+function UsersExplore({
+  users,
+  isLoading,
+  error,
+}: {
+  users: SearchUser[];
+  isLoading: boolean;
+  error: unknown;
+}) {
+  return (
+    <div className="space-y-4">
+      <div>
+        <h2 className="text-xl font-bold text-[#061f22]">Peers</h2>
+        <p className="mt-1 text-sm text-[#53676b]">
+          Find classmates, researchers, and collaborators by name.
+        </p>
+      </div>
+
+      {error ? (
+        <Card className="border-destructive/20 bg-white">
+          <CardContent className="p-5 text-sm text-destructive">
+            {getErrorMessage(error, "Could not load peers.")}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {isLoading ? (
+        <Card className="border-[#b8c4c7] bg-white">
+          <CardContent className="p-5 text-sm text-[#53676b]">
+            Searching peers...
+          </CardContent>
+        </Card>
+      ) : users.length ? (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {users.map((user) => (
+            <UserCard key={user.id} user={user} />
+          ))}
+        </div>
+      ) : (
+        <Card className="border-[#b8c4c7] bg-white">
+          <CardContent className="p-8 text-center">
+            <UserRound className="mx-auto size-10 text-[#53676b]" />
+            <h3 className="mt-4 text-lg font-semibold">No peers found</h3>
+            <p className="mt-2 text-sm text-[#53676b]">
+              Try searching by first or last name.
+            </p>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 function ExploreRightRail({ groups }: { groups: ExploreGroup[] }) {
   const openGroups = groups.filter((group) => (group.visibility ?? "public") === "public");
   const privateGroups = groups.filter((group) => group.visibility === "private");
@@ -449,8 +539,8 @@ function ExploreRightRail({ groups }: { groups: ExploreGroup[] }) {
             <div>
               <h2 className="text-sm font-bold">Explore tip</h2>
               <p className="mt-1 text-xs leading-5 text-[#53676b]">
-                Use Groups when you want a community to join, and Posts when you
-                want to scan what people are discussing.
+                Use Peers for classmates and collaborators, Posts for discussions,
+                and Groups when you want a community to join.
               </p>
             </div>
           </div>
@@ -462,9 +552,12 @@ function ExploreRightRail({ groups }: { groups: ExploreGroup[] }) {
 
 export function ExplorePage() {
   const queryClient = useQueryClient();
-  const [mode, setMode] = useState<ExploreMode>("groups");
-  const [searchDraft, setSearchDraft] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialQuery = searchParams.get("q") ?? "";
+  const initialMode = toExploreMode(searchParams.get("mode"));
+  const [mode, setMode] = useState<ExploreMode>(initialMode);
+  const [searchDraft, setSearchDraft] = useState(initialQuery);
+  const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [visibilityFilter, setVisibilityFilter] =
     useState<GroupVisibilityFilter>("all");
   const [joiningGroupId, setJoiningGroupId] = useState<number | null>(null);
@@ -479,6 +572,12 @@ export function ExplorePage() {
     queryFn: () => feedApi.getFeed({ search: searchQuery, limit: 12 }),
     retry: false,
     enabled: mode === "posts",
+  });
+  const usersQuery = useQuery({
+    queryKey: ["explore", "users", searchQuery],
+    queryFn: () => searchApi.searchUsers({ q: searchQuery, limit: 30 }),
+    retry: false,
+    enabled: mode === "users",
   });
   const joinMutation = useMutation({
     mutationFn: groupsApi.joinGroup,
@@ -496,10 +595,27 @@ export function ExplorePage() {
 
   const groups = groupsQuery.data ?? EMPTY_GROUPS;
   const posts = postsQuery.data?.data ?? EMPTY_POSTS;
+  const users = usersQuery.data ?? EMPTY_USERS;
+
+  useEffect(() => {
+    const nextQuery = searchParams.get("q") ?? "";
+    const nextMode = toExploreMode(searchParams.get("mode"));
+
+    setSearchDraft(nextQuery);
+    setSearchQuery(nextQuery);
+    setMode(nextMode);
+  }, [searchParams]);
 
   function handleSearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setSearchQuery(searchDraft.trim());
+    const nextQuery = searchDraft.trim();
+    setSearchQuery(nextQuery);
+    setSearchParams(nextQuery ? { q: nextQuery, mode } : { mode });
+  }
+
+  function handleModeChange(nextMode: ExploreMode) {
+    setMode(nextMode);
+    setSearchParams(searchQuery ? { q: searchQuery, mode: nextMode } : { mode: nextMode });
   }
 
   return (
@@ -508,7 +624,7 @@ export function ExplorePage() {
         <ExploreHero
           mode={mode}
           searchDraft={searchDraft}
-          onModeChange={setMode}
+          onModeChange={handleModeChange}
           onSearchDraftChange={setSearchDraft}
           onSearch={handleSearch}
         />
@@ -530,6 +646,12 @@ export function ExplorePage() {
             joiningGroupId={joiningGroupId}
             onVisibilityFilterChange={setVisibilityFilter}
             onJoin={(groupId) => joinMutation.mutate(groupId)}
+          />
+        ) : mode === "users" ? (
+          <UsersExplore
+            users={users}
+            isLoading={usersQuery.isLoading}
+            error={usersQuery.error}
           />
         ) : (
           <PostsExplore

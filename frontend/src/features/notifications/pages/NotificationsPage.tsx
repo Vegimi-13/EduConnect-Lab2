@@ -164,34 +164,42 @@ function NotificationItem({
         </div>
 
         {/* Follow request actions — only shown while not yet handled (unread) */}
-        {isFollowRequest && notification.sender && !isAccepting && !isDeclining && (
-          <div className="mt-2.5 flex gap-2">
-            <Button
-              size="sm"
-              className="h-8 bg-[#073f43] px-4 text-xs text-white hover:bg-[#062f33]"
-              onClick={() => onAccept(notification.id, notification.sender!.id)}
-              disabled={isActing}
-            >
-              {isAccepting ? (
-                <span className="animate-pulse">Accepting…</span>
-              ) : (
-                <>
-                  <Check className="size-3.5" />
-                  Accept
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 px-4 text-xs"
-              onClick={() => onDecline(notification.id, notification.sender!.id)}
-              disabled={isActing}
-            >
-              {isDeclining ? <span className="animate-pulse">Declining…</span> : "Decline"}
-            </Button>
-          </div>
-        )}
+        {isFollowRequest &&
+          notification.sender &&
+          !notification.is_read &&
+          !isAccepting &&
+          !isDeclining && (
+            <div className="mt-2.5 flex gap-2">
+              <Button
+                size="sm"
+                className="h-8 bg-[#073f43] px-4 text-xs text-white hover:bg-[#062f33]"
+                onClick={() => onAccept(notification.id, notification.sender!.id)}
+                disabled={isActing}
+              >
+                {isAccepting ? (
+                  <span className="animate-pulse">Accepting…</span>
+                ) : (
+                  <>
+                    <Check className="size-3.5" />
+                    Accept
+                  </>
+                )}
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 px-4 text-xs"
+                onClick={() => onDecline(notification.id, notification.sender!.id)}
+                disabled={isActing}
+              >
+                {isDeclining ? (
+                  <span className="animate-pulse">Declining…</span>
+                ) : (
+                  "Decline"
+                )}
+              </Button>
+            </div>
+          )}
       </div>
     </div>
   );
@@ -310,6 +318,7 @@ export function NotificationsPage() {
         return next;
       });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["follow"] });
     },
   });
 
@@ -323,6 +332,7 @@ export function NotificationsPage() {
         return next;
       });
       queryClient.invalidateQueries({ queryKey: ["notifications"] });
+      queryClient.invalidateQueries({ queryKey: ["follow"] });
     },
   });
 

@@ -1,6 +1,8 @@
-import { ShieldCheck } from "lucide-react";
+import { FileBarChart, History, ShieldCheck } from "lucide-react";
+import { Link } from "react-router-dom";
 
 import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export function AdminHero() {
   return (
@@ -19,9 +21,26 @@ export function AdminHero() {
             </p>
           </div>
 
-          <div className="rounded-md border border-white/20 bg-white/10 px-4 py-3 text-sm">
-            <p className="font-semibold">Backend surfaces</p>
-            <p className="mt-1 text-[#d7ecea]">Reports, roles, permissions, users</p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              asChild
+              className="h-10 shrink-0 bg-[#ffc85c] px-4 text-sm font-semibold text-[#5f4308] hover:bg-[#f3bb4a]"
+            >
+              <Link to="/reports">
+                <FileBarChart className="size-4" />
+                Generate report
+              </Link>
+            </Button>
+            <Button
+              asChild
+              variant="outline"
+              className="h-10 shrink-0 border-white/25 bg-white/10 px-4 text-sm font-semibold text-white hover:bg-white/18"
+            >
+              <Link to="/admin/logs">
+                <History className="size-4" />
+                View logs
+              </Link>
+            </Button>
           </div>
         </div>
       </CardContent>

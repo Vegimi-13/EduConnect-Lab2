@@ -6,7 +6,18 @@ export type FollowStatusResponse = {
   status: FollowStatus;
 };
 
-async function followUser(userId: number): Promise<{ message: string }> {
+type FollowRecord = {
+  follower_id: number;
+  following_id: number;
+  status: "pending" | "accepted" | "rejected";
+};
+
+type FollowMutationResponse = {
+  message: string;
+  data: FollowRecord;
+};
+
+async function followUser(userId: number): Promise<FollowMutationResponse> {
   const { data } = await api.post(`/follow/${userId}`);
   return data;
 }

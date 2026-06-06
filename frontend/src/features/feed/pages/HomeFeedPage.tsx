@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
@@ -122,6 +122,8 @@ function Avatar({
 function Composer() {
   const createPost = useFeedStore((state) => state.createPost);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const [searchParams] = useSearchParams();
   const [content, setContent] = useState("");
   const [files, setFiles] = useState<File[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -169,8 +171,17 @@ function Composer() {
     setError(null);
   }
 
+  useEffect(() => {
+    if (searchParams.get("compose") !== "1") {
+      return;
+    }
+
+    textareaRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+    textareaRef.current?.focus();
+  }, [searchParams]);
+
   return (
-    <Card className="border-[#b8c4c7] bg-white">
+    <Card id="feed-composer" className="border-[#b8c4c7] bg-white">
       <form onSubmit={handleSubmit}>
         <CardContent className="p-4">
           <input
@@ -187,6 +198,7 @@ function Composer() {
               <BookOpen className="size-5 text-[#53676b]" />
             </div>
             <textarea
+              ref={textareaRef}
               className="min-h-20 flex-1 resize-none bg-transparent pt-1.5 text-base outline-none placeholder:text-[#6b7280]"
               placeholder="Share an insight or research update..."
               value={content}
@@ -624,16 +636,12 @@ function FeedPostCard({ post }: { post: FeedPost }) {
                             className="size-8 rounded-full bg-[#0b4f53]"
                           />
                         </Link>
-                      ) : (
-                        <Avatar
-                          label={getInitials(
-                            comment.user?.first_name,
-                            comment.user?.last_name,
-                            "ME"
-                          )}
-                          className="size-8 rounded-full bg-[#0b4f53]"
-                        />
-                      )}
+	                      ) : (
+	                        <Avatar
+	                          label="ME"
+	                          className="size-8 rounded-full bg-[#0b4f53]"
+	                        />
+	                      )}
                       <div className="flex-1 rounded-md bg-[#f3f6fb] px-3 py-2">
                         <div className="flex items-center justify-between gap-3">
                           {comment.user ? (
@@ -680,16 +688,12 @@ function FeedPostCard({ post }: { post: FeedPost }) {
                               className="size-7 rounded-full bg-[#d8a44a]"
                             />
                           </Link>
-                        ) : (
-                          <Avatar
-                            label={getInitials(
-                              reply.user?.first_name,
-                              reply.user?.last_name,
-                              "ME"
-                            )}
-                            className="size-7 rounded-full bg-[#d8a44a]"
-                          />
-                        )}
+	                        ) : (
+	                          <Avatar
+	                            label="ME"
+	                            className="size-7 rounded-full bg-[#d8a44a]"
+	                          />
+	                        )}
                         <div className="flex-1 rounded-md bg-[#f8fafc] px-3 py-2">
                           <div className="flex items-center justify-between gap-3">
                             {reply.user ? (

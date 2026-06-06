@@ -69,6 +69,14 @@ export type AdminAuditLogResponse = {
 
 export type AdminFeedResponse = {
   data: FeedPost[];
+  meta: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNextPage: boolean;
+    hasPrevPage: boolean;
+  };
 };
 
 export type AdminApiErrorResponse = {

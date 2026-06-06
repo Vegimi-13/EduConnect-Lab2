@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { FormEvent, ReactNode } from "react";
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
@@ -19,10 +19,13 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { queryClient } from "@/app/providers";
 import { adminApi } from "@/features/admin/api/adminApi";
 import { authApi } from "@/features/auth/api/authApi";
 import { useAuthStore } from "@/features/auth/store/authStore";
+import { notificationsApi } from "@/features/notifications/api/notificationsApi";
 import { profileApi } from "@/features/profile/api/profileApi";
+import { disconnectSocket } from "@/lib/socket";
 
 type AppShellProps = {
   children: ReactNode;
@@ -77,6 +80,7 @@ export function AppShell({
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [searchDraft, setSearchDraft] = useState("");
   const profileQuery = useQuery({
     queryKey: ["profile", "me"],
     queryFn: profileApi.getMyProfile,
@@ -87,6 +91,12 @@ export function AppShell({
     queryFn: adminApi.getRoles,
     retry: false,
   });
+  const unreadNotificationsQuery = useQuery({
+    queryKey: ["notifications", "unread-count"],
+    queryFn: notificationsApi.getUnreadCount,
+    retry: false,
+    refetchInterval: 30000,
+  });
 
   const initials =
     profileQuery.data?.first_name?.[0] && profileQuery.data?.last_name?.[0]
@@ -95,6 +105,18 @@ export function AppShell({
   const visibleNavItems = navItems.filter(
     (item) => item.label !== "Admin" || adminAccessQuery.isSuccess
   );
+  const unreadNotifications = unreadNotificationsQuery.data?.count ?? 0;
+
+  function handleSearch(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+
+    const query = searchDraft.trim();
+    navigate(
+      query
+        ? `/explore?mode=users&q=${encodeURIComponent(query)}`
+        : "/explore?mode=users"
+    );
+  }
 
   async function handleLogout() {
     setIsLoggingOut(true);
@@ -104,7 +126,9 @@ export function AppShell({
     } catch {
       // Clear local session even if the server-side logout request fails.
     } finally {
+      disconnectSocket();
       clearAuth();
+      queryClient.clear();
       navigate("/login");
       setIsLoggingOut(false);
     }
@@ -113,39 +137,79 @@ export function AppShell({
   return (
     <main className="h-dvh overflow-hidden bg-[#f3f6fb] text-[#101820]">
       <header className="flex h-16 items-center justify-between border-b border-[#c8d1d7] bg-white px-5 lg:px-7">
-        <div className="text-xl font-bold text-[#073f43]">EduConnect</div>
+        <div className="hidden min-w-52 lg:block">
+          <div className="text-xl font-bold leading-tight text-[#073f43]">
+            EduConnect
+          </div>
+          <div className="text-xs font-medium text-[#172b2e]">
+            Academic Network
+          </div>
+        </div>
 
-        <div className="relative hidden w-[31rem] max-w-[42vw] lg:block">
+        <form
+          className="relative hidden w-[31rem] max-w-[42vw] lg:block"
+          onSubmit={handleSearch}
+        >
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-[#2d3b3d]" />
           <Input
             type="search"
-            placeholder="Search research, peers, or groups..."
+            placeholder="Search peers or posts..."
             className="h-10 border-[#b8c4c7] bg-[#edf3fb] pl-10 text-sm"
+            value={searchDraft}
+            onChange={(event) => setSearchDraft(event.target.value)}
           />
-        </div>
+        </form>
 
         <div className="flex items-center gap-2 sm:gap-4">
-          <Button variant="ghost" size="icon-sm" aria-label="Messages">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Messages"
+            onClick={() => navigate("/messages")}
+          >
             <Mail className="size-5" />
           </Button>
-          <Button variant="ghost" size="icon-sm" aria-label="Notifications">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label={
+              unreadNotifications
+                ? `${unreadNotifications} unread notifications`
+                : "Notifications"
+            }
+            className="relative"
+            title={
+              unreadNotifications
+                ? `${unreadNotifications} unread notifications`
+                : "Notifications"
+            }
+            onClick={() => navigate("/notifications")}
+          >
             <Bell className="size-5" />
+            {unreadNotifications > 0 ? (
+              <span className="absolute -right-0.5 -top-0.5 flex min-w-4 items-center justify-center rounded-full bg-[#c88736] px-1 text-[10px] font-bold leading-4 text-white">
+                {unreadNotifications > 9 ? "9+" : unreadNotifications}
+              </span>
+            ) : null}
           </Button>
-          <Button className="hidden h-9 bg-[#073f43] px-4 text-sm text-white hover:bg-[#062f33] sm:inline-flex">
+          <Button
+            type="button"
+            className="hidden h-9 bg-[#073f43] px-4 text-sm text-white hover:bg-[#062f33] sm:inline-flex"
+            onClick={() => navigate("/feed?compose=1")}
+          >
             Create Post
           </Button>
           <UserAvatar label={initials} />
         </div>
       </header>
 
-      <div className="grid h-[calc(100dvh-4rem)] grid-cols-1 md:grid-cols-[15rem_minmax(0,1fr)] xl:grid-cols-[15rem_minmax(0,1fr)_23rem]">
+      <div
+        className={`grid h-[calc(100dvh-4rem)] grid-cols-1 md:grid-cols-[15rem_minmax(0,1fr)] ${
+          rightRail ? "xl:grid-cols-[15rem_minmax(0,1fr)_23rem]" : ""
+        }`}
+      >
         <aside className="hidden border-r border-[#c8d1d7] bg-[#e9eff8] px-4 py-6 md:flex md:flex-col">
-          <div>
-            <h1 className="text-2xl font-bold text-[#073f43]">EduConnect</h1>
-            <p className="mt-1 text-sm text-[#172b2e]">Academic Network</p>
-          </div>
-
-          <nav className="mt-9 space-y-1.5">
+          <nav className="space-y-1.5">
             {visibleNavItems.map((item) => {
               const Icon = item.icon;
               const isActive = item.label === activeItem;
@@ -159,6 +223,14 @@ export function AppShell({
                 <NavLink key={item.label} to={item.to} className={className}>
                   <Icon className="size-4" />
                   {item.label}
+                  {item.label === "Notifications" && unreadNotifications > 0 ? (
+                    <span
+                      className="ml-auto flex min-w-5 items-center justify-center rounded-full bg-[#c88736] px-1.5 text-[11px] font-bold leading-5 text-white"
+                      title={`${unreadNotifications} unread notifications`}
+                    >
+                      {unreadNotifications > 99 ? "99+" : unreadNotifications}
+                    </span>
+                  ) : null}
                 </NavLink>
               );
             })}

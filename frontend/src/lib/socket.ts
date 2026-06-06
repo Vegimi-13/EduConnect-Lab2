@@ -3,6 +3,7 @@ import { io, type Socket } from "socket.io-client";
 import { useAuthStore } from "@/features/auth/store/authStore";
 
 let socket: Socket | null = null;
+let socketToken: string | null = null;
 
 function getSocketUrl() {
   const configuredUrl = import.meta.env.VITE_SOCKET_URL as string | undefined;
@@ -31,6 +32,12 @@ export function getSocket() {
         token,
       },
     });
+    socketToken = token;
+  }
+
+  if (socketToken !== token) {
+    socket.disconnect();
+    socketToken = token;
   }
 
   socket.auth = {
@@ -47,4 +54,5 @@ export function getSocket() {
 export function disconnectSocket() {
   socket?.disconnect();
   socket = null;
+  socketToken = null;
 }

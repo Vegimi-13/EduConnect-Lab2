@@ -1,11 +1,19 @@
-import { History } from "lucide-react";
+import { ChevronLeft, ChevronRight, History } from "lucide-react";
 
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import type { AdminAuditLog } from "../types/admin.types";
 
 type AdminAuditLogsPanelProps = {
   logs: AdminAuditLog[];
   isLoading: boolean;
+  pagination?: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+  onPageChange?: (page: number) => void;
 };
 
 function formatAction(action: string) {
@@ -30,14 +38,61 @@ function getUserDisplayName(log: AdminAuditLog) {
 export function AdminAuditLogsPanel({
   logs,
   isLoading,
+  pagination,
+  onPageChange,
 }: AdminAuditLogsPanelProps) {
+  const hasPreviousPage = Boolean(pagination && pagination.page > 1);
+  const hasNextPage = Boolean(
+    pagination && pagination.page < pagination.totalPages
+  );
+
   return (
     <Card className="border-[#b8c4c7] bg-white">
-      <CardHeader className="p-5">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <History className="size-5" />
-          Audit Logs
-        </h2>
+      <CardHeader className="flex flex-row items-center justify-between gap-4 p-5">
+        <div>
+          <h2 className="flex items-center gap-2 text-lg font-semibold">
+            <History className="size-5" />
+            Audit Logs
+          </h2>
+          {pagination ? (
+            <p className="mt-1 text-xs text-[#4b5563]">
+              {pagination.total > 0
+                ? `Showing ${(pagination.page - 1) * pagination.limit + 1}-${Math.min(
+                    pagination.page * pagination.limit,
+                    pagination.total
+                  )} of ${pagination.total}`
+                : "No logs recorded yet"}
+            </p>
+          ) : null}
+        </div>
+
+        {pagination && onPageChange ? (
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-medium text-[#4b5563]">
+              Page {pagination.page} of {Math.max(pagination.totalPages, 1)}
+            </span>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              disabled={!hasPreviousPage || isLoading}
+              onClick={() => onPageChange(pagination.page - 1)}
+              aria-label="Previous audit log page"
+            >
+              <ChevronLeft className="size-4" />
+            </Button>
+            <Button
+              variant="outline"
+              size="icon"
+              className="h-8 w-8"
+              disabled={!hasNextPage || isLoading}
+              onClick={() => onPageChange(pagination.page + 1)}
+              aria-label="Next audit log page"
+            >
+              <ChevronRight className="size-4" />
+            </Button>
+          </div>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-3 px-5 pb-5">
         {isLoading ? (

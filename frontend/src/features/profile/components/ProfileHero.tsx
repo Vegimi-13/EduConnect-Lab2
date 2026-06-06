@@ -1,4 +1,4 @@
-import { Edit3, ExternalLink, MapPin, Share2, UserCheck, UserMinus, UserPlus, Clock } from "lucide-react";
+import { Edit3, ExternalLink, MapPin, Share2, UserCheck, UserPlus, Clock } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
@@ -55,11 +55,10 @@ function FollowButton({ userId, profileVisibility }: { userId: number; profileVi
 
   const followMutation = useMutation({
     mutationFn: () => followApi.followUser(userId),
-    onSuccess: () => {
-      // Optimistically update the status based on profile visibility
-      const newStatus = profileVisibility === "private" ? "pending" : "following";
+    onSuccess: (response) => {
+      const newStatus =
+        response.data.status === "accepted" ? "following" : "pending";
       queryClient.setQueryData(queryKey, { status: newStatus });
-      // Refresh followers count
       queryClient.invalidateQueries({ queryKey: ["follow", "followers", userId] });
     },
   });

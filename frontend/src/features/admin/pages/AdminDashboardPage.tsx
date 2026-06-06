@@ -41,6 +41,7 @@ export function AdminDashboardPage() {
   const queryClient = useQueryClient();
   const [userQuery, setUserQuery] = useState("");
   const [feedPage, setFeedPage] = useState(1);
+  const [auditPage, setAuditPage] = useState(1);
   const [rolesError, setRolesError] = useState<string | null>(null);
   const [userRolesError, setUserRolesError] = useState<string | null>(null);
 
@@ -72,8 +73,8 @@ export function AdminDashboardPage() {
   });
 
   const auditLogsQuery = useQuery({
-    queryKey: auditLogsQueryKey,
-    queryFn: () => adminApi.getAuditLogs(1, 10),
+    queryKey: [...auditLogsQueryKey, auditPage],
+    queryFn: () => adminApi.getAuditLogs(auditPage, 10),
   });
 
   const assignPermissionMutation = useMutation({
@@ -243,7 +244,9 @@ export function AdminDashboardPage() {
 
         <AdminAuditLogsPanel 
           logs={auditLogs} 
-          isLoading={auditLogsQuery.isLoading} 
+          isLoading={auditLogsQuery.isLoading}
+          pagination={auditLogsQuery.data?.meta}
+          onPageChange={setAuditPage}
         />
 
         <div className="grid gap-5 xl:hidden">

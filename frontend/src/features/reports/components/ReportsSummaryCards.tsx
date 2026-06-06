@@ -1,28 +1,20 @@
-import { useEffect, useState } from "react";
-import {
-  getReportsOverview,
-  type ReportsOverview,
-} from "../api/reportsApi";
+import type { ReportsOverview } from "../api/reportsApi";
 
-export const ReportsSummaryCards = () => {
-  const [reports, setReports] = useState<ReportsOverview | null>(null);
-  const [loading, setLoading] = useState(true);
+type ReportsSummaryCardsProps = {
+  reports?: ReportsOverview;
+  isLoading: boolean;
+};
 
-  useEffect(() => {
-    const fetchReports = async () => {
-      try {
-        const data = await getReportsOverview();
-        setReports(data);
-      } catch (error) {
-        console.error("Failed to load reports:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+function percentage(value: number, total: number) {
+  if (!total) return "0%";
+  return `${Math.round((value / total) * 100)}%`;
+}
 
-    fetchReports();
-  }, []);
-
+export const ReportsSummaryCards = ({
+  reports,
+  isLoading,
+}: ReportsSummaryCardsProps) => {
+  const total = Object.values(reports ?? {}).reduce((sum, value) => sum + value, 0);
   const summaryItems = [
     { label: "Users", value: reports?.users ?? 0 },
     { label: "Posts", value: reports?.posts ?? 0 },
@@ -45,8 +37,11 @@ export const ReportsSummaryCards = () => {
           </p>
 
           <h3 className="mt-2 text-3xl font-bold text-slate-900">
-            {loading ? "..." : item.value}
+            {isLoading ? "..." : item.value.toLocaleString()}
           </h3>
+          <p className="mt-2 text-xs font-medium text-slate-500">
+            {isLoading ? "..." : `${percentage(item.value, total)} of total activity`}
+          </p>
         </div>
       ))}
     </section>

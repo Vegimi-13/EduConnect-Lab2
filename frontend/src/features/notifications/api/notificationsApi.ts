@@ -1,7 +1,6 @@
 import { api } from "@/lib/axios";
 import type {
   MarkReadPayload,
-  Notification,
   NotificationsResponse,
 } from "../types/notification.types";
 

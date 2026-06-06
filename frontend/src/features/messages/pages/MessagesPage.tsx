@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Edit, Search, Send, X, MessageSquare } from "lucide-react";
 import { AppShell } from "@/components/layout/AppShell";
-import { messagesApi, type Conversation, type Message, type MutualUser } from "../api/messagesApi";
+import { messagesApi, type Conversation, type Message } from "../api/messagesApi";
 import { getSocket } from "@/lib/socket";
 import { useAuthStore } from "@/features/auth/store/authStore";
 
