@@ -28,11 +28,7 @@ const followService = {
       );
     }
 
-    // 🔥 CHECK VISIBILITY
-    const status =
-      targetUser.profile?.visibility === "public"
-        ? "accepted"
-        : "pending";
+    const status = "pending";
 
     const follow = await followRepository.createFollowRequest(
       currentUserId,
@@ -46,12 +42,9 @@ const followService = {
     await notificationService.notify({
       user_id: targetUserId,
       sender_id: currentUserId,
-      type: status === "accepted" ? "FOLLOW_ACCEPTED" : "FOLLOW_REQUEST",
-      title: status === "accepted" ? "New follower" : "New follow request",
-      message:
-        status === "accepted"
-          ? `${actorName} started following you.`
-          : `${actorName} requested to follow you.`,
+      type: "FOLLOW_REQUEST",
+      title: "New follow request",
+      message: `${actorName} requested to follow you.`,
     });
 
     return follow;

@@ -30,6 +30,15 @@ const notificationController = {
     }
   },
 
+  async getUnreadCount(req: Request, res: Response, next: NextFunction) {
+    try {
+      const count = await notificationService.getUnreadCount(req.user.userId);
+      res.status(200).json({ count });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   // PATCH /notifications/read  — matches frontend's markAsRead & markAllAsRead calls
   async markAsRead(req: Request, res: Response, next: NextFunction) {
     try {

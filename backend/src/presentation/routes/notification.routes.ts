@@ -12,6 +12,9 @@ router.get("/", authenticate, notificationController.getMyNotifications);
 // PATCH /notifications/read    — mark one or all as read (frontend sends { notificationIds: [] } or { all: true })
 router.patch("/read", authenticate, notificationController.markAsRead);
 
+// GET /notifications/unread-count
+router.get("/unread-count", authenticate, notificationController.getUnreadCount);
+
 // DELETE /notifications/:id
 router.delete(
   "/:id",

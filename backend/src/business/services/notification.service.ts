@@ -26,6 +26,10 @@ const notificationService = {
     return notificationRepository.findByUserId(user_id, onlyUnread);
   },
 
+  async getUnreadCount(user_id: number) {
+    return notificationRepository.countUnreadByUserId(user_id);
+  },
+
   async markAsRead(user_id: number, notificationId: number) {
     const notification = await notificationRepository.findById(notificationId);
 

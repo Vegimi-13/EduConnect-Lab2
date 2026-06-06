@@ -45,6 +45,15 @@ const notificationRepository = {
     });
   },
 
+  async countUnreadByUserId(user_id: number) {
+    return prisma.notification.count({
+      where: {
+        user_id,
+        is_read: false,
+      },
+    });
+  },
+
   async findById(id: number) {
     return prisma.notification.findUnique({
       where: { id },
