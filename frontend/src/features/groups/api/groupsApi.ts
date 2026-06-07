@@ -11,6 +11,7 @@ import type {
   GroupChannel,
   GroupMember,
   GroupMembership,
+  UpdateGroupRequest,
 } from "../types/groups.types";
 
 function createGroupsApiError(message: string, status?: number) {
@@ -73,6 +74,14 @@ async function createGroup(payload: CreateGroupRequest) {
   return response.data;
 }
 
+async function updateGroup(groupId: number, payload: UpdateGroupRequest) {
+  const response = await requestGroups(
+    api.put<GroupApiResponse<Group>>(`/groups/${groupId}`, payload)
+  );
+
+  return response.data;
+}
+
 async function searchGroups(query?: { q?: string; page?: number; limit?: number }) {
   return requestGroups(
     api.get<ExploreGroup[]>("/search/groups", {
@@ -119,6 +128,7 @@ async function createGroupChannel(
 export const groupsApi = {
   getMyGroups,
   createGroup,
+  updateGroup,
   searchGroups,
   joinGroup,
   getGroupMembers,

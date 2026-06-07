@@ -114,6 +114,12 @@ export type CreateGroupRequest = {
   visibility?: "public" | "private";
 };
 
+export type UpdateGroupRequest = {
+  name?: string;
+  description?: string;
+  visibility?: "public" | "private";
+};
+
 export type GroupApiResponse<T> = {
   message: string;
   data: T;

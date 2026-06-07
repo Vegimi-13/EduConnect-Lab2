@@ -1,20 +1,18 @@
-import { api } from "../../../lib/axios";
+import { api } from "@/lib/axios";
 
 export type LiveKitTokenResponse = {
   token: string;
-  roomName?: string;
-  serverUrl?: string;
-  url?: string;
+  roomName: string;
+  wsUrl: string;
 };
 
-export type LiveKitCallMode = "private" | "channel";
+const livekitApi = {
+  async getPrivateCallToken(conversationId: number): Promise<LiveKitTokenResponse> {
+    const { data } = await api.post<LiveKitTokenResponse>(
+      `/livekit/private/${conversationId}/token`
+    );
+    return data;
+  },
+};
 
-export async function getLiveKitToken(mode: LiveKitCallMode, id: string) {
-  const path =
-    mode === "private"
-      ? `/livekit/private/${id}/token`
-      : `/livekit/channels/${id}/token`;
-
-  const { data } = await api.post<LiveKitTokenResponse>(path);
-  return data;
-}
+export default livekitApi;

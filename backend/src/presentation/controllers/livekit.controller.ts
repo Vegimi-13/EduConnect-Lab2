@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import livekitService from "../../business/services/livekit.service";
+import { config } from "../../config/env";
 
 const livekitController = {
   async privateCallToken(req: Request, res: Response, next: NextFunction) {
@@ -12,6 +13,7 @@ const livekitController = {
       res.status(200).json({
         token,
         roomName: `private-conversation-${conversationId}`,
+        wsUrl: config.livekit.url
       });
     } catch (error) {
       next(error);

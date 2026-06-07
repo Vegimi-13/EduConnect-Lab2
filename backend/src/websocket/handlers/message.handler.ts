@@ -199,6 +199,59 @@ export const messagingHandler = (io: Server, socket: Socket) => {
         }
     });
 
+    socket.on('call_invite', async (data: { conversation_id: number }) => {
+        try {
+            const parsed = parsePositiveId(data.conversation_id, 'conversation_id');
+            await messagingService.ensureCanAccessConversation(user_id, parsed);
+
+            // Forward invite to all other participants in the conversation room
+            socket.to(`conversation:${parsed}`).emit('call_incoming', {
+                conversation_id: parsed,
+                caller_id: user_id,
+            });
+        } catch (error: any) {
+            socket.emit('exception', error.message);
+        }
+    });
+
+    socket.on('call_accepted', async (data: { conversation_id: number }) => {
+        try {
+            const parsed = parsePositiveId(data.conversation_id, 'conversation_id');
+            await messagingService.ensureCanAccessConversation(user_id, parsed);
+
+            socket.to(`conversation:${parsed}`).emit('call_was_accepted', {
+                conversation_id: parsed,
+                callee_id: user_id,
+            });
+        } catch (error: any) {
+            socket.emit('exception', error.message);
+        }
+    });
+
+    socket.on('call_rejected', async (data: { conversation_id: number }) => {
+        try {
+            const parsed = parsePositiveId(data.conversation_id, 'conversation_id');
+            socket.to(`conversation:${parsed}`).emit('call_was_rejected', {
+                conversation_id: parsed,
+                callee_id: user_id,
+            });
+        } catch (error: any) {
+            socket.emit('exception', error.message);
+        }
+    });
+
+    socket.on('call_ended', async (data: { conversation_id: number }) => {
+        try {
+            const parsed = parsePositiveId(data.conversation_id, 'conversation_id');
+            socket.to(`conversation:${parsed}`).emit('call_was_ended', {
+                conversation_id: parsed,
+                ended_by: user_id,
+            });
+        } catch (error: any) {
+            socket.emit('exception', error.message);
+        }
+    });
+
     socket.on('disconnect', () => {
         console.log(`User ${user_id} disconnected`);
     });

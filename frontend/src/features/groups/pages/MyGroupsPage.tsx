@@ -9,6 +9,12 @@ import {
   Send,
   Settings,
   UsersRound,
+  X,                // ✅ FIX: was missing — caused "X is not defined" ReferenceError
+  Globe,
+  Lock,
+  Zap,
+  ChevronRight,
+  Users,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { FormEvent } from "react";
@@ -22,7 +28,7 @@ import { useAuthStore } from "@/features/auth/store/authStore";
 import { feedApi } from "@/features/feed/api/feedApi";
 import type { FeedPost } from "@/features/feed/types/feed.types";
 import { getSocket } from "@/lib/socket";
-import { groupsApi } from "../api/groupsApi";
+import { groupsApi } from "../../groups/api/groupsApi";
 import type {
   ChannelJoinedPayload,
   ChannelMessage,
@@ -31,40 +37,39 @@ import type {
   GroupChannel,
   GroupMember,
   GroupMembership,
-} from "../types/groups.types";
+} from "../../groups/types/groups.types";
+
+// ─── Types ────────────────────────────────────────────────────────────────────
 
 type GroupTab = "feed" | "channels" | "members" | "about";
 
-type PresenceSnapshotPayload = {
-  user_ids: number[];
-};
-
-type PresenceUserPayload = {
-  user_id: number;
-};
-
+type PresenceSnapshotPayload = { user_ids: number[] };
+type PresenceUserPayload = { user_id: number };
 type ChannelTypingPayload = {
   user_id: number;
   channel_id: number;
   conversation_id: number;
 };
 
-const tabs: Array<{ label: string; value: GroupTab }> = [
-  { label: "Feed", value: "feed" },
-  { label: "Channels", value: "channels" },
-  { label: "Members", value: "members" },
-  { label: "About", value: "about" },
+// ─── Constants ────────────────────────────────────────────────────────────────
+
+const tabs: Array<{ label: string; value: GroupTab; icon: React.ElementType }> = [
+  { label: "Feed",     value: "feed",     icon: Zap },
+  { label: "Channels", value: "channels", icon: Hash },
+  { label: "Members",  value: "members",  icon: Users },
+  { label: "About",    value: "about",    icon: Info },
 ];
 
 const EMPTY_MEMBERSHIPS: GroupMembership[] = [];
 const EMPTY_CHANNELS: GroupChannel[] = [];
 const EMPTY_MEMBERS: GroupMember[] = [];
 
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
 function getErrorMessage(error: unknown, fallback: string) {
   if (typeof error === "object" && error && "message" in error) {
-    return String(error.message);
+    return String((error as { message: unknown }).message);
   }
-
   return fallback;
 }
 
@@ -93,6 +98,15 @@ function formatMessageTime(date: string) {
   }).format(new Date(date));
 }
 
+function getGroupDescription(group: Group) {
+  return (
+    group.description ??
+    "A focused academic space for sharing resources, discussing projects, and coordinating study sessions."
+  );
+}
+
+// ─── Hooks ────────────────────────────────────────────────────────────────────
+
 function useOnlineUserIds() {
   const [onlineUserIds, setOnlineUserIds] = useState<Set<number>>(new Set());
 
@@ -102,21 +116,11 @@ function useOnlineUserIds() {
     function handlePresenceSnapshot(payload: PresenceSnapshotPayload) {
       setOnlineUserIds(new Set(payload.user_ids));
     }
-
     function handleUserOnline(payload: PresenceUserPayload) {
-      setOnlineUserIds((currentUserIds) => {
-        const nextUserIds = new Set(currentUserIds);
-        nextUserIds.add(payload.user_id);
-        return nextUserIds;
-      });
+      setOnlineUserIds((s) => { const n = new Set(s); n.add(payload.user_id); return n; });
     }
-
     function handleUserOffline(payload: PresenceUserPayload) {
-      setOnlineUserIds((currentUserIds) => {
-        const nextUserIds = new Set(currentUserIds);
-        nextUserIds.delete(payload.user_id);
-        return nextUserIds;
-      });
+      setOnlineUserIds((s) => { const n = new Set(s); n.delete(payload.user_id); return n; });
     }
 
     socket.on("presence_snapshot", handlePresenceSnapshot);
@@ -134,12 +138,28 @@ function useOnlineUserIds() {
   return onlineUserIds;
 }
 
-function getGroupDescription(group: Group) {
+// ─── Shared UI atoms ──────────────────────────────────────────────────────────
+
+function Avatar({
+  initials,
+  size = "md",
+  className = "",
+}: {
+  initials: string;
+  size?: "sm" | "md" | "lg";
+  className?: string;
+}) {
+  const sizes = { sm: "size-8 text-xs", md: "size-10 text-sm", lg: "size-14 text-base" };
   return (
-    group.description ??
-    "A focused academic space for sharing resources, discussing projects, and coordinating study sessions."
+    <div
+      className={`flex shrink-0 items-center justify-center rounded-xl bg-[#073f43] font-bold text-white ${sizes[size]} ${className}`}
+    >
+      {initials}
+    </div>
   );
 }
+
+// ─── Empty State ──────────────────────────────────────────────────────────────
 
 function EmptyGroupsState() {
   const queryClient = useQueryClient();
@@ -158,95 +178,127 @@ function EmptyGroupsState() {
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!name.trim()) {
-      return;
-    }
-
-    createGroupMutation.mutate({
-      name: name.trim(),
-      description: description.trim() || undefined,
-      visibility,
-    });
+    if (!name.trim()) return;
+    createGroupMutation.mutate({ name: name.trim(), description: description.trim() || undefined, visibility });
   }
 
   return (
-    <div className="mx-auto flex min-h-[calc(100dvh-8rem)] max-w-3xl items-center">
-      <Card className="w-full border-[#b8c4c7] bg-white">
-        <CardContent className="grid gap-8 p-8 md:grid-cols-[0.95fr_1.05fr]">
-          <div>
-            <div className="flex size-14 items-center justify-center rounded-md bg-[#dbe8fb]">
-              <UsersRound className="size-7 text-[#073f43]" />
+    <div className="mx-auto flex min-h-[calc(100dvh-8rem)] max-w-3xl items-center py-8">
+      <div className="w-full overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-lg">
+        {/* Banner */}
+        <div className="relative overflow-hidden bg-[#073f43] px-8 py-10 text-white">
+          <div className="absolute -right-12 -top-12 size-48 rounded-full bg-white/5" />
+          <div className="absolute -bottom-8 right-16 size-32 rounded-full bg-white/5" />
+          <div className="relative flex items-center gap-4">
+            <div className="flex size-16 items-center justify-center rounded-2xl border border-white/20 bg-white/10">
+              <UsersRound className="size-8" />
             </div>
-            <h1 className="mt-5 text-3xl font-bold text-[#061f22]">
-              Start your first academic group
-            </h1>
-            <p className="mt-3 text-sm leading-6 text-[#53676b]">
-              You are not part of any group yet. Create a space for your class,
-              research team, study circle, or project collaborators.
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Your Groups</h1>
+              <p className="mt-1 text-sm text-white/70">
+                You haven't joined or created any groups yet.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-0 md:grid-cols-2">
+          {/* Left: explanation */}
+          <div className="border-r border-[#edf3fb] p-8">
+            <p className="text-sm font-semibold uppercase tracking-widest text-[#073f43]">
+              Why create a group?
             </p>
+            <ul className="mt-5 space-y-4">
+              {[
+                { icon: Users,  text: "Collaborate with classmates and lab partners" },
+                { icon: Hash,   text: "Focused channels for each topic or project" },
+                { icon: Zap,    text: "Real-time chat and group-level post feed" },
+                { icon: Globe,  text: "Public or private — you control access" },
+              ].map(({ icon: Icon, text }) => (
+                <li key={text} className="flex items-start gap-3">
+                  <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#edf3fb]">
+                    <Icon className="size-3.5 text-[#073f43]" />
+                  </div>
+                  <span className="text-sm leading-6 text-[#3d5156]">{text}</span>
+                </li>
+              ))}
+            </ul>
           </div>
 
-          <form className="space-y-4" onSubmit={handleSubmit}>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold" htmlFor="group-name">
+          {/* Right: form */}
+          <form className="space-y-4 p-8" onSubmit={handleSubmit}>
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-widest text-[#073f43]">
+                Create your first group
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-[#101820]" htmlFor="group-name">
                 Group name
               </label>
               <Input
                 id="group-name"
                 placeholder="Computer Science Students"
                 value={name}
-                onChange={(event) => setName(event.target.value)}
+                onChange={(e) => setName(e.target.value)}
+                className="border-[#c8d1d7] focus-visible:border-[#073f43]"
                 required
               />
             </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-semibold" htmlFor="group-description">
-                Description
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-[#101820]" htmlFor="group-description">
+                Description <span className="font-normal text-[#8a9a9c]">(optional)</span>
               </label>
               <textarea
                 id="group-description"
-                className="min-h-28 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                placeholder="Share what this group is for..."
+                className="min-h-24 w-full resize-none rounded-lg border border-[#c8d1d7] bg-white px-3 py-2 text-sm outline-none transition focus-visible:border-[#073f43] focus-visible:ring-2 focus-visible:ring-[#073f43]/20"
+                placeholder="What is this group about?"
                 value={description}
-                onChange={(event) => setDescription(event.target.value)}
+                onChange={(e) => setDescription(e.target.value)}
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               {(["public", "private"] as const).map((option) => (
-                <Button
+                <button
                   key={option}
                   type="button"
-                  variant={visibility === option ? "secondary" : "outline"}
-                  className={visibility === option ? "bg-[#edf3fb]" : ""}
                   onClick={() => setVisibility(option)}
+                  className={`flex items-center justify-center gap-2 rounded-lg border py-2.5 text-sm font-semibold transition ${
+                    visibility === option
+                      ? "border-[#073f43] bg-[#073f43] text-white"
+                      : "border-[#c8d1d7] bg-white text-[#3d5156] hover:border-[#073f43]/40"
+                  }`}
                 >
+                  {option === "public" ? <Globe className="size-3.5" /> : <Lock className="size-3.5" />}
                   {option === "public" ? "Public" : "Private"}
-                </Button>
+                </button>
               ))}
             </div>
 
             {createGroupMutation.error ? (
-              <p className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
                 {getErrorMessage(createGroupMutation.error, "Could not create group.")}
               </p>
             ) : null}
 
             <Button
-              className="h-10 w-full bg-[#073f43] text-white hover:bg-[#062f33]"
-              disabled={createGroupMutation.isPending}
+              className="h-11 w-full rounded-xl bg-[#073f43] text-sm font-semibold text-white hover:bg-[#052c2f]"
+              disabled={!name.trim() || createGroupMutation.isPending}
             >
               <Plus className="size-4" />
               {createGroupMutation.isPending ? "Creating..." : "Create group"}
             </Button>
           </form>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
+
+// ─── Group List (right rail) ──────────────────────────────────────────────────
 
 function GroupList({
   memberships,
@@ -258,14 +310,14 @@ function GroupList({
   onSelectGroup: (groupId: number) => void;
 }) {
   return (
-    <Card className="border-[#b8c4c7] bg-white">
-      <CardHeader className="p-4">
-        <h2 className="text-lg font-semibold">My Groups</h2>
-        <span className="rounded-full bg-[#edf3fb] px-2.5 py-1 text-xs font-bold">
+    <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#edf3fb] px-4 py-3">
+        <h2 className="text-sm font-bold text-[#101820]">My Groups</h2>
+        <span className="rounded-full bg-[#073f43] px-2.5 py-0.5 text-xs font-bold text-white">
           {memberships.length}
         </span>
-      </CardHeader>
-      <CardContent className="space-y-2 px-4 pb-4">
+      </div>
+      <div className="divide-y divide-[#f3f6fb]">
         {memberships.map((membership) => {
           const group = membership.group;
           const isSelected = group.id === selectedGroupId;
@@ -273,94 +325,324 @@ function GroupList({
           return (
             <button
               key={group.id}
-              className={`flex w-full items-center gap-3 rounded-md p-3 text-left transition ${
-                isSelected ? "bg-[#d0dee9]" : "hover:bg-[#edf3fb]"
+              className={`flex w-full items-center gap-3 px-4 py-3 text-left transition ${
+                isSelected ? "bg-[#edf8f4]" : "hover:bg-[#f8fafc]"
               }`}
               type="button"
               onClick={() => onSelectGroup(group.id)}
             >
-              <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#073f43] text-xs font-bold text-white">
-                {getInitials(group.name)}
-              </div>
-              <div className="min-w-0">
-                <p className="truncate text-sm font-bold">{group.name}</p>
-                <p className="text-xs text-[#53676b]">
-                  {membership.role ?? "member"} - {membership.status ?? "active"}
+              <Avatar initials={getInitials(group.name)} size="sm" />
+              <div className="min-w-0 flex-1">
+                <p className={`truncate text-sm font-semibold ${isSelected ? "text-[#073f43]" : "text-[#101820]"}`}>
+                  {group.name}
                 </p>
+                <p className="text-xs text-[#7a8e91]">{membership.role ?? "member"}</p>
               </div>
+              {isSelected && (
+                <div className="size-1.5 shrink-0 rounded-full bg-[#073f43]" />
+              )}
             </button>
           );
         })}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
+
+// ─── Group Hero ───────────────────────────────────────────────────────────────
 
 function GroupHero({
   group,
   activeTab,
   onTabChange,
+  onOpenSettings,
 }: {
   group: Group;
   activeTab: GroupTab;
   onTabChange: (tab: GroupTab) => void;
+  onOpenSettings: () => void;
 }) {
   return (
-    <Card className="overflow-hidden border-[#b8c4c7] bg-white">
-      <div className="relative h-44 bg-[#073f43]">
-        <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(5,50,52,0.96),rgba(16,108,108,0.78)),linear-gradient(180deg,rgba(255,255,255,0.08),rgba(0,0,0,0.2))]" />
-        <div className="absolute inset-y-0 left-10 w-28 border-x border-white/10" />
-        <div className="absolute right-12 top-0 h-full w-56 border-x border-white/15" />
-        <div className="absolute bottom-0 left-0 right-0 h-16 bg-white/8" />
-        <div className="absolute left-8 top-1/2 flex -translate-y-1/2 items-center gap-5">
-          <div className="flex size-16 items-center justify-center rounded-md border-2 border-white bg-[#0b5557] text-xl font-bold text-white">
-            {getInitials(group.name)}
+    <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-sm">
+      {/* Banner */}
+      <div className="relative overflow-hidden bg-[#073f43] px-6 py-6 text-white">
+        <div className="absolute -right-8 -top-8 size-40 rounded-full bg-white/5" />
+        <div className="absolute -bottom-6 right-32 size-24 rounded-full bg-white/5" />
+
+        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+          <div className="flex min-w-0 items-center gap-4">
+            <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-lg font-bold">
+              {getInitials(group.name)}
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-xl font-bold tracking-tight">{group.name}</h1>
+              <p className="mt-1 line-clamp-1 text-sm text-white/65">
+                {getGroupDescription(group)}
+              </p>
+            </div>
           </div>
-          <div className="text-white">
-            <h1 className="text-2xl font-bold">{group.name}</h1>
-            <p className="mt-1 text-sm text-white/80">
-              {group.visibility ?? "public"} academic community
-            </p>
+
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold">
+              <Check className="size-3.5" />
+              Joined
+            </div>
+            <button
+              type="button"
+              aria-label="Group settings"
+              onClick={onOpenSettings}
+              className="flex size-8 items-center justify-center rounded-lg border border-white/20 bg-white/10 transition hover:bg-white/20"
+            >
+              <Settings className="size-4" />
+            </button>
           </div>
         </div>
       </div>
 
-      <CardContent className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <p className="max-w-2xl text-sm leading-6 text-[#1f2937]">
-            {getGroupDescription(group)}
-          </p>
-          <div className="flex gap-2">
-            <Button variant="secondary" className="bg-[#edf3fb]">
-              <Check className="size-4" />
-              Joined
-            </Button>
-            <Button variant="outline" size="icon-sm" aria-label="Group settings">
-              <Settings className="size-4" />
-            </Button>
-          </div>
-        </div>
-
-        <div className="mt-5 flex gap-6 border-b border-[#d6dde3]">
-          {tabs.map((tab) => (
+      {/* Tab bar */}
+      <div className="flex overflow-x-auto px-2">
+        {tabs.map((tab) => {
+          const Icon = tab.icon;
+          const isActive = activeTab === tab.value;
+          return (
             <button
               key={tab.value}
-              className={`border-b-2 px-1 pb-3 text-sm font-semibold ${
-                activeTab === tab.value
-                  ? "border-[#073f43] text-[#073f43]"
-                  : "border-transparent text-[#53676b]"
-              }`}
               type="button"
               onClick={() => onTabChange(tab.value)}
+              className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${
+                isActive
+                  ? "border-[#073f43] text-[#073f43]"
+                  : "border-transparent text-[#7a8e91] hover:text-[#3d5156]"
+              }`}
             >
+              <Icon className="size-3.5" />
               {tab.label}
             </button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+          );
+        })}
+      </div>
+    </div>
   );
 }
+
+// ─── Group Settings Modal ─────────────────────────────────────────────────────
+
+function GroupSettingsModal({
+  group,
+  onClose,
+}: {
+  group: Group;
+  onClose: () => void;
+}) {
+  const queryClient = useQueryClient();
+  const [name, setName] = useState(group.name);
+  const [description, setDescription] = useState(group.description ?? "");
+  const [visibility, setVisibility] = useState<"public" | "private">(
+    group.visibility === "private" ? "private" : "public"
+  );
+  const [channelName, setChannelName] = useState("");
+  const [channelDescription, setChannelDescription] = useState("");
+
+  const updateGroupMutation = useMutation({
+    mutationFn: () =>
+      groupsApi.updateGroup(group.id, {
+        name: name.trim(),
+        description: description.trim() || undefined,
+        visibility,
+      }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["groups", "my"] });
+    },
+  });
+
+  const createChannelMutation = useMutation({
+    mutationFn: () =>
+      groupsApi.createGroupChannel(group.id, {
+        name: channelName.trim(),
+        type: "text",
+        description: channelDescription.trim() || undefined,
+      }),
+    onSuccess: () => {
+      setChannelName("");
+      setChannelDescription("");
+      void queryClient.invalidateQueries({ queryKey: ["groups", group.id, "channels"] });
+    },
+  });
+
+  function handleUpdateGroup(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!name.trim()) return;
+    updateGroupMutation.mutate();
+  }
+
+  function handleCreateChannel(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!channelName.trim()) return;
+    createChannelMutation.mutate();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm">
+      <div className="max-h-[calc(100dvh-3rem)] w-full max-w-2xl overflow-hidden rounded-2xl border border-[#c8d1d7] bg-white shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between border-b border-[#edf3fb] bg-[#073f43] px-6 py-4 text-white">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center rounded-xl border border-white/20 bg-white/10">
+              <Settings className="size-4" />
+            </div>
+            <div>
+              <h2 className="text-base font-bold">Group settings</h2>
+              <p className="text-xs text-white/60">{group.name}</p>
+            </div>
+          </div>
+          {/* ✅ X is now correctly imported above */}
+          <button
+            type="button"
+            className="flex size-8 items-center justify-center rounded-lg border border-white/20 bg-white/10 transition hover:bg-white/20"
+            onClick={onClose}
+            aria-label="Close settings"
+          >
+            <X className="size-4" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="grid max-h-[calc(100dvh-9rem)] overflow-y-auto md:grid-cols-2">
+          {/* Group info form */}
+          <form
+            className="space-y-4 border-b border-[#edf3fb] p-6 md:border-b-0 md:border-r"
+            onSubmit={handleUpdateGroup}
+          >
+            <div>
+              <h3 className="font-semibold text-[#101820]">Group info</h3>
+              <p className="mt-1 text-xs leading-5 text-[#7a8e91]">
+                Update the name, description, and visibility.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-[#101820]" htmlFor="settings-group-name">
+                Name
+              </label>
+              <Input
+                id="settings-group-name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="border-[#c8d1d7] focus-visible:border-[#073f43]"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-[#101820]" htmlFor="settings-group-description">
+                Description
+              </label>
+              <textarea
+                id="settings-group-description"
+                className="min-h-24 w-full resize-none rounded-lg border border-[#c8d1d7] bg-white px-3 py-2 text-sm outline-none transition focus-visible:border-[#073f43] focus-visible:ring-2 focus-visible:ring-[#073f43]/20"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-2">
+              {(["public", "private"] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => setVisibility(option)}
+                  className={`flex items-center justify-center gap-2 rounded-lg border py-2 text-sm font-semibold transition ${
+                    visibility === option
+                      ? "border-[#073f43] bg-[#073f43] text-white"
+                      : "border-[#c8d1d7] bg-white text-[#3d5156] hover:border-[#073f43]/40"
+                  }`}
+                >
+                  {option === "public" ? <Globe className="size-3.5" /> : <Lock className="size-3.5" />}
+                  {option === "public" ? "Public" : "Private"}
+                </button>
+              ))}
+            </div>
+
+            {updateGroupMutation.error ? (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {getErrorMessage(updateGroupMutation.error, "Could not update group.")}
+              </p>
+            ) : updateGroupMutation.isSuccess ? (
+              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                Changes saved successfully.
+              </p>
+            ) : null}
+
+            <Button
+              className="w-full rounded-xl bg-[#073f43] font-semibold text-white hover:bg-[#052c2f]"
+              disabled={!name.trim() || updateGroupMutation.isPending}
+            >
+              {updateGroupMutation.isPending ? "Saving..." : "Save changes"}
+            </Button>
+          </form>
+
+          {/* Create channel form */}
+          <form className="space-y-4 p-6" onSubmit={handleCreateChannel}>
+            <div>
+              <h3 className="font-semibold text-[#101820]">Create channel</h3>
+              <p className="mt-1 text-xs leading-5 text-[#7a8e91]">
+                Add a focused space for announcements, labs, or project work.
+              </p>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-[#101820]" htmlFor="settings-channel-name">
+                Channel name
+              </label>
+              <div className="relative">
+                <Hash className="absolute left-3 top-1/2 size-3.5 -translate-y-1/2 text-[#7a8e91]" />
+                <Input
+                  id="settings-channel-name"
+                  placeholder="announcements"
+                  value={channelName}
+                  onChange={(e) => setChannelName(e.target.value)}
+                  className="border-[#c8d1d7] pl-8 focus-visible:border-[#073f43]"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-sm font-semibold text-[#101820]" htmlFor="settings-channel-description">
+                Description <span className="font-normal text-[#8a9a9c]">(optional)</span>
+              </label>
+              <textarea
+                id="settings-channel-description"
+                className="min-h-24 w-full resize-none rounded-lg border border-[#c8d1d7] bg-white px-3 py-2 text-sm outline-none transition focus-visible:border-[#073f43] focus-visible:ring-2 focus-visible:ring-[#073f43]/20"
+                placeholder="What should members discuss here?"
+                value={channelDescription}
+                onChange={(e) => setChannelDescription(e.target.value)}
+              />
+            </div>
+
+            {createChannelMutation.error ? (
+              <p className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                {getErrorMessage(createChannelMutation.error, "Could not create channel.")}
+              </p>
+            ) : createChannelMutation.isSuccess ? (
+              <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                Channel created!
+              </p>
+            ) : null}
+
+            <Button
+              className="w-full rounded-xl bg-[#073f43] font-semibold text-white hover:bg-[#052c2f]"
+              disabled={!channelName.trim() || createChannelMutation.isPending}
+            >
+              <Plus className="size-4" />
+              {createChannelMutation.isPending ? "Creating..." : "Create channel"}
+            </Button>
+          </form>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Feed Tab ─────────────────────────────────────────────────────────────────
 
 function FeedTab({ groupId }: { groupId: number }) {
   const feedQuery = useQuery({
@@ -371,11 +653,9 @@ function FeedTab({ groupId }: { groupId: number }) {
 
   if (feedQuery.isLoading) {
     return (
-      <Card className="border-[#b8c4c7] bg-white">
-        <CardContent className="p-5 text-sm text-[#53676b]">
-          Loading group feed...
-        </CardContent>
-      </Card>
+      <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white p-5 shadow-sm">
+        <p className="text-sm text-[#7a8e91]">Loading group feed...</p>
+      </div>
     );
   }
 
@@ -383,67 +663,65 @@ function FeedTab({ groupId }: { groupId: number }) {
 
   if (!posts.length) {
     return (
-      <Card className="border-[#b8c4c7] bg-white">
-        <CardContent className="p-5">
-          <h2 className="text-base font-semibold">No group posts yet</h2>
-          <p className="mt-2 text-sm text-[#53676b]">
-            Group posts will appear here when members publish to this group.
-          </p>
-        </CardContent>
-      </Card>
+      <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white p-8 text-center shadow-sm">
+        <Zap className="mx-auto size-10 text-[#c8d1d7]" />
+        <h2 className="mt-3 text-base font-semibold text-[#101820]">No group posts yet</h2>
+        <p className="mt-2 text-sm leading-6 text-[#7a8e91]">
+          Group posts will appear here when members publish to this group.
+        </p>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {posts.map((post: FeedPost) => (
-        <Card key={post.id} className="border-[#b8c4c7] bg-white">
-          <CardContent className="p-5">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex gap-3">
-                <div className="flex size-10 items-center justify-center rounded-md bg-[#073f43] text-xs font-bold text-white">
-                  {post.user.first_name[0]}
-                  {post.user.last_name[0]}
-                </div>
-                <div>
-                  <p className="font-semibold">
-                    {post.user.first_name} {post.user.last_name}
-                  </p>
-                  <p className="text-xs font-medium uppercase text-[#53676b]">
-                    Group post
-                  </p>
-                </div>
+        <div
+          key={post.id}
+          className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white p-5 shadow-sm transition hover:shadow-md"
+        >
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex gap-3">
+              <Avatar initials={`${post.user.first_name[0]}${post.user.last_name[0]}`} />
+              <div>
+                <p className="font-semibold text-[#101820]">
+                  {post.user.first_name} {post.user.last_name}
+                </p>
+                <p className="text-xs font-medium uppercase tracking-wide text-[#7a8e91]">
+                  Group post
+                </p>
               </div>
-              <MoreVertical className="size-4 text-[#53676b]" />
             </div>
-            <p className="mt-4 text-sm leading-7">{post.content}</p>
-            <div className="mt-4 flex gap-5 border-t border-[#d6dde3] pt-3 text-sm text-[#53676b]">
-              <span>{post.stats.reactions} reactions</span>
-              <span>{post.stats.comments} comments</span>
-            </div>
-          </CardContent>
-        </Card>
+            <button className="text-[#c8d1d7] transition hover:text-[#7a8e91]">
+              <MoreVertical className="size-4" />
+            </button>
+          </div>
+          <p className="mt-4 text-sm leading-7 text-[#1f2937]">{post.content}</p>
+          <div className="mt-4 flex gap-5 border-t border-[#f3f6fb] pt-3 text-sm text-[#7a8e91]">
+            <span>{post.stats.reactions} reactions</span>
+            <span>{post.stats.comments} comments</span>
+          </div>
+        </div>
       ))}
     </div>
   );
 }
 
+// ─── Channels Tab ─────────────────────────────────────────────────────────────
+
 function ChannelsTab({ group }: { group: Group }) {
   const groupId = group.id;
-  const queryClient = useQueryClient();
   const currentUser = useAuthStore((state) => state.user);
   const currentUserId = useAuthStore((state) => state.user?.id);
   const typingTimeoutRef = useRef<number | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
   const [messages, setMessages] = useState<ChannelMessage[]>([]);
   const [messageDraft, setMessageDraft] = useState("");
-  const [channelName, setChannelName] = useState("");
-  const [channelDescription, setChannelDescription] = useState("");
   const [typingUserIds, setTypingUserIds] = useState<Set<number>>(new Set());
-  const [connectionState, setConnectionState] = useState<
-    "idle" | "connecting" | "connected" | "error"
-  >("idle");
+  const [connectionState, setConnectionState] = useState<"idle" | "connecting" | "connected" | "error">("idle");
   const [socketError, setSocketError] = useState<string | null>(null);
+
   const channelsQuery = useQuery({
     queryKey: ["groups", groupId, "channels"],
     queryFn: () => groupsApi.getGroupChannels(groupId),
@@ -454,53 +732,40 @@ function ChannelsTab({ group }: { group: Group }) {
     queryFn: () => groupsApi.getGroupMembers(groupId),
     retry: false,
   });
+
   const channels = channelsQuery.data ?? EMPTY_CHANNELS;
   const members = membersQuery.data ?? EMPTY_MEMBERS;
-  const selectedChannel = useMemo<GroupChannel | undefined>(() => {
-    return channels.find((channel) => channel.id === selectedChannelId) ?? channels[0];
-  }, [channels, selectedChannelId]);
-  const memberNameById = useMemo(() => {
-    return new Map(
-      members.map((member) => [
-        member.user_id,
-        `${member.user.first_name} ${member.user.last_name}`.trim(),
-      ])
-    );
-  }, [members]);
-  const typingNames = useMemo(() => {
-    return Array.from(typingUserIds)
-      .filter((userId) => userId !== currentUserId)
-      .map((userId) => memberNameById.get(userId) ?? "Someone");
-  }, [currentUserId, memberNameById, typingUserIds]);
+
+  const selectedChannel = useMemo<GroupChannel | undefined>(
+    () => channels.find((c) => c.id === selectedChannelId) ?? channels[0],
+    [channels, selectedChannelId]
+  );
+
+  const memberNameById = useMemo(
+    () => new Map(members.map((m) => [m.user_id, `${m.user.first_name} ${m.user.last_name}`.trim()])),
+    [members]
+  );
+
+  const typingNames = useMemo(
+    () =>
+      Array.from(typingUserIds)
+        .filter((uid) => uid !== currentUserId)
+        .map((uid) => memberNameById.get(uid) ?? "Someone"),
+    [currentUserId, memberNameById, typingUserIds]
+  );
+
   const currentUserLabel = currentUser?.email ?? "Signed-in user";
   const currentUserInitials = getInitials(currentUserLabel) || "U";
-  const canManageChannels = group.owner_id === currentUserId;
 
-  const createChannelMutation = useMutation({
-    mutationFn: () =>
-      groupsApi.createGroupChannel(groupId, {
-        name: channelName.trim(),
-        type: "text",
-        description: channelDescription.trim() || undefined,
-      }),
-    onSuccess: (channel) => {
-      setChannelName("");
-      setChannelDescription("");
-      setSelectedChannelId(channel.id);
-      void queryClient.invalidateQueries({
-        queryKey: ["groups", groupId, "channels"],
-      });
-    },
-  });
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   useEffect(() => {
     if (!selectedChannel) {
-      const resetTimer = window.setTimeout(() => {
-        setMessages([]);
-        setConnectionState("idle");
-      }, 0);
-
-      return () => window.clearTimeout(resetTimer);
+      const t = window.setTimeout(() => { setMessages([]); setConnectionState("idle"); }, 0);
+      return () => window.clearTimeout(t);
     }
 
     let isActive = true;
@@ -508,10 +773,7 @@ function ChannelsTab({ group }: { group: Group }) {
     const socket = getSocket();
 
     queueMicrotask(() => {
-      if (!isActive) {
-        return;
-      }
-
+      if (!isActive) return;
       setMessages([]);
       setMessageDraft("");
       setSocketError(null);
@@ -520,80 +782,34 @@ function ChannelsTab({ group }: { group: Group }) {
     });
 
     function handleChannelJoined(payload: ChannelJoinedPayload) {
-      if (!isActive || payload.channel_id !== channel.id) {
-        return;
-      }
-
+      if (!isActive || payload.channel_id !== channel.id) return;
       setMessages(payload.messages);
       setConnectionState("connected");
     }
-
     function handleNewChannelMessage(payload: ChannelMessagePayload) {
-      if (!isActive || payload.channel_id !== channel.id) {
-        return;
-      }
-
-      setTypingUserIds((currentUserIds) => {
-        if (!currentUserIds.has(payload.message.sender_id)) {
-          return currentUserIds;
-        }
-
-        const nextUserIds = new Set(currentUserIds);
-        nextUserIds.delete(payload.message.sender_id);
-        return nextUserIds;
+      if (!isActive || payload.channel_id !== channel.id) return;
+      setTypingUserIds((s) => {
+        if (!s.has(payload.message.sender_id)) return s;
+        const n = new Set(s); n.delete(payload.message.sender_id); return n;
       });
-      setMessages((currentMessages) => {
-        if (currentMessages.some((message) => message.id === payload.message.id)) {
-          return currentMessages;
-        }
-
-        return [...currentMessages, payload.message];
-      });
+      setMessages((m) => m.some((x) => x.id === payload.message.id) ? m : [...m, payload.message]);
       setConnectionState("connected");
     }
-
     function handleChannelTyping(payload: ChannelTypingPayload) {
-      if (!isActive || payload.channel_id !== channel.id || payload.user_id === currentUserId) {
-        return;
-      }
-
-      setTypingUserIds((currentUserIds) => {
-        const nextUserIds = new Set(currentUserIds);
-        nextUserIds.add(payload.user_id);
-        return nextUserIds;
-      });
+      if (!isActive || payload.channel_id !== channel.id || payload.user_id === currentUserId) return;
+      setTypingUserIds((s) => { const n = new Set(s); n.add(payload.user_id); return n; });
     }
-
     function handleChannelStopTyping(payload: ChannelTypingPayload) {
-      if (!isActive || payload.channel_id !== channel.id) {
-        return;
-      }
-
-      setTypingUserIds((currentUserIds) => {
-        if (!currentUserIds.has(payload.user_id)) {
-          return currentUserIds;
-        }
-
-        const nextUserIds = new Set(currentUserIds);
-        nextUserIds.delete(payload.user_id);
-        return nextUserIds;
-      });
+      if (!isActive || payload.channel_id !== channel.id) return;
+      setTypingUserIds((s) => { if (!s.has(payload.user_id)) return s; const n = new Set(s); n.delete(payload.user_id); return n; });
     }
-
     function handleException(message: string) {
-      if (!isActive) {
-        return;
-      }
-
+      if (!isActive) return;
       setSocketError(String(message));
       setConnectionState("error");
     }
-
     function handleConnectError(error: Error) {
-      if (!isActive) {
-        return;
-      }
-
+      if (!isActive) return;
       setSocketError(error.message);
       setConnectionState("error");
     }
@@ -614,40 +830,21 @@ function ChannelsTab({ group }: { group: Group }) {
       socket.off("channel_user_stop_typing", handleChannelStopTyping);
       socket.off("exception", handleException);
       socket.off("connect_error", handleConnectError);
-
-      if (socket.connected) {
-        socket.emit("leave_channel", { channel_id: channel.id });
-      }
+      if (socket.connected) socket.emit("leave_channel", { channel_id: channel.id });
     };
   }, [currentUserId, selectedChannel]);
 
-  useEffect(() => {
-    return () => {
-      if (typingTimeoutRef.current) {
-        window.clearTimeout(typingTimeoutRef.current);
-      }
-    };
-  }, []);
+  useEffect(() => () => { if (typingTimeoutRef.current) window.clearTimeout(typingTimeoutRef.current); }, []);
 
   function emitStopTyping(channelId: number) {
-    const socket = getSocket();
-    socket.emit("channel_stop_typing", { channel_id: channelId });
+    getSocket().emit("channel_stop_typing", { channel_id: channelId });
   }
 
   function handleMessageDraftChange(value: string) {
     setMessageDraft(value);
-
-    if (!selectedChannel) {
-      return;
-    }
-
-    const socket = getSocket();
-    socket.emit("channel_typing", { channel_id: selectedChannel.id });
-
-    if (typingTimeoutRef.current) {
-      window.clearTimeout(typingTimeoutRef.current);
-    }
-
+    if (!selectedChannel) return;
+    getSocket().emit("channel_typing", { channel_id: selectedChannel.id });
+    if (typingTimeoutRef.current) window.clearTimeout(typingTimeoutRef.current);
     typingTimeoutRef.current = window.setTimeout(() => {
       emitStopTyping(selectedChannel.id);
       typingTimeoutRef.current = null;
@@ -656,258 +853,216 @@ function ChannelsTab({ group }: { group: Group }) {
 
   function handleSendChannelMessage(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-
-    if (!selectedChannel || !messageDraft.trim()) {
-      return;
-    }
-
-    const socket = getSocket();
-    socket.emit("send_channel_message", {
+    if (!selectedChannel || !messageDraft.trim()) return;
+    getSocket().emit("send_channel_message", {
       channel_id: selectedChannel.id,
       content: messageDraft.trim(),
       message_type: "text",
     });
     emitStopTyping(selectedChannel.id);
-    if (typingTimeoutRef.current) {
-      window.clearTimeout(typingTimeoutRef.current);
-      typingTimeoutRef.current = null;
-    }
+    if (typingTimeoutRef.current) { window.clearTimeout(typingTimeoutRef.current); typingTimeoutRef.current = null; }
     setMessageDraft("");
-  }
-
-  function handleCreateChannel(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-
-    if (!channelName.trim()) {
-      return;
-    }
-
-    createChannelMutation.mutate();
   }
 
   if (channelsQuery.isLoading) {
     return (
-      <Card className="border-[#b8c4c7] bg-white">
-        <CardContent className="p-5 text-sm text-[#53676b]">
-          Loading channels...
-        </CardContent>
-      </Card>
+      <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white p-5 shadow-sm">
+        <p className="text-sm text-[#7a8e91]">Loading channels...</p>
+      </div>
     );
   }
 
   return (
-    <Card className="overflow-hidden border-[#b8c4c7] bg-white">
-      <div className="grid min-h-[30rem] md:grid-cols-[16rem_minmax(0,1fr)]">
-        <aside className="border-r border-[#d6dde3] bg-[#e9eff8]">
-          <div className="border-b border-[#d6dde3] px-4 py-3">
-            <p className="text-xs font-bold uppercase text-[#53676b]">
-              Academic Channels
+    <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-sm">
+      <div className="grid min-h-[36rem] lg:grid-cols-[13rem_minmax(0,1fr)]">
+        {/* Channel sidebar */}
+        <aside className="flex flex-col border-r border-[#edf3fb] bg-[#f8fafc]">
+          <div className="border-b border-[#edf3fb] px-4 py-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#7a8e91]">Channels</p>
+            <p className="mt-1 text-sm font-semibold text-[#101820]">
+              {channels.length} {channels.length === 1 ? "space" : "spaces"}
             </p>
           </div>
-          <div className="space-y-1 p-3">
+
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto p-3">
             {channels.length ? (
               channels.map((channel) => {
                 const isActive = channel.id === selectedChannel?.id;
-
                 return (
                   <button
                     key={channel.id}
-                    className={`flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm font-semibold ${
-                      isActive ? "bg-[#d0dee9] text-[#073f43]" : "hover:bg-white/70"
-                    }`}
                     type="button"
                     onClick={() => setSelectedChannelId(channel.id)}
+                    className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left transition ${
+                      isActive
+                        ? "bg-[#073f43] text-white shadow-sm"
+                        : "text-[#3d5156] hover:bg-white"
+                    }`}
                   >
-                    <Hash className="size-4" />
-                    {channel.name}
+                    <Hash className="size-3.5 shrink-0" />
+                    <span className="block min-w-0 truncate text-sm font-semibold">{channel.name}</span>
+                    {isActive && <ChevronRight className="ml-auto size-3.5 shrink-0 opacity-60" />}
                   </button>
                 );
               })
             ) : (
-              <p className="px-3 py-2 text-sm text-[#53676b]">
-                No channels have been created yet.
+              <p className="rounded-xl border border-dashed border-[#c8d1d7] bg-white px-3 py-4 text-center text-xs text-[#7a8e91]">
+                No channels yet
               </p>
             )}
           </div>
-          {canManageChannels ? (
-            <form
-              className="mx-3 mt-3 space-y-2 rounded-md border border-[#c8d3dc] bg-white p-3"
-              onSubmit={handleCreateChannel}
-            >
-              <p className="text-xs font-bold uppercase text-[#53676b]">
-                New channel
-              </p>
-              <Input
-                aria-label="Channel name"
-                className="h-8"
-                placeholder="announcements"
-                value={channelName}
-                onChange={(event) => setChannelName(event.target.value)}
-              />
-              <textarea
-                aria-label="Channel description"
-                className="min-h-16 w-full resize-none rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
-                placeholder="What members should discuss here"
-                value={channelDescription}
-                onChange={(event) => setChannelDescription(event.target.value)}
-              />
-              {createChannelMutation.error ? (
-                <p className="rounded-md border border-destructive/20 bg-destructive/10 px-2 py-1.5 text-xs text-destructive">
-                  {getErrorMessage(
-                    createChannelMutation.error,
-                    "Could not create channel."
-                  )}
-                </p>
-              ) : null}
-              <Button
-                className="h-8 w-full bg-[#073f43] text-white hover:bg-[#062f33]"
-                disabled={!channelName.trim() || createChannelMutation.isPending}
-                size="sm"
-              >
-                <Plus className="size-3.5" />
-                {createChannelMutation.isPending ? "Creating..." : "Create channel"}
-              </Button>
-            </form>
-          ) : null}
-          <div className="mt-auto border-t border-[#d6dde3] px-4 py-3">
-            <div className="flex items-center gap-2">
-              <div className="flex size-8 items-center justify-center rounded-md bg-[#d0dee9] text-xs font-bold">
-                {currentUserInitials}
+
+          {/* Current user footer */}
+          <div className="border-t border-[#edf3fb] bg-white px-4 py-3">
+            <div className="flex items-center gap-2.5">
+              <div className="relative">
+                <Avatar initials={currentUserInitials} size="sm" />
+                <span className="absolute -bottom-0.5 -right-0.5 size-2.5 rounded-full border-2 border-white bg-emerald-500" />
               </div>
-              <div>
-                <p className="max-w-[11rem] truncate text-sm font-bold">
-                  {currentUserLabel}
-                </p>
-                <p className="text-xs font-bold uppercase text-emerald-700">Online</p>
+              <div className="min-w-0">
+                <p className="max-w-[7rem] truncate text-xs font-bold text-[#101820]">{currentUserLabel}</p>
+                <p className="text-[10px] font-bold uppercase tracking-wide text-emerald-600">Online</p>
               </div>
             </div>
           </div>
         </aside>
 
-        <section className="flex min-h-[30rem] flex-col">
-          <div className="flex items-center justify-between border-b border-[#d6dde3] px-4 py-3">
-            <div>
-              <h2 className="flex items-center gap-2 text-base font-bold">
-                <Hash className="size-4" />
+        {/* Chat area */}
+        <section className="flex min-h-0 flex-col bg-white">
+          {/* Channel header */}
+          <div className="flex items-center justify-between gap-4 border-b border-[#edf3fb] px-5 py-3.5">
+            <div className="min-w-0">
+              <h2 className="flex items-center gap-2 text-base font-bold text-[#101820]">
+                <Hash className="size-4 text-[#073f43]" />
                 {selectedChannel?.name ?? "channels"}
               </h2>
-              <p className="mt-1 text-xs text-[#53676b]">
-                {selectedChannel?.description ?? "Discussion space for this group."}
-              </p>
+              {selectedChannel?.description ? (
+                <p className="mt-0.5 truncate text-xs text-[#7a8e91]">{selectedChannel.description}</p>
+              ) : null}
             </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="icon-sm" aria-label="Search channel">
+            <div className="flex shrink-0 items-center gap-2">
+              <span
+                className={`hidden items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-bold md:flex ${
+                  connectionState === "connected" ? "bg-emerald-50 text-emerald-700"
+                  : connectionState === "error" ? "bg-red-50 text-red-700"
+                  : "bg-[#f3f6fb] text-[#7a8e91]"
+                }`}
+              >
+                <span className={`size-1.5 rounded-full ${
+                  connectionState === "connected" ? "bg-emerald-500"
+                  : connectionState === "error" ? "bg-red-500"
+                  : "bg-[#c8d1d7]"
+                }`} />
+                {connectionState}
+              </span>
+              <button className="flex size-8 items-center justify-center rounded-lg text-[#7a8e91] transition hover:bg-[#f3f6fb] hover:text-[#073f43]">
                 <Search className="size-4" />
-              </Button>
-              <Button variant="ghost" size="icon-sm" aria-label="Channel members">
+              </button>
+              <button className="flex size-8 items-center justify-center rounded-lg text-[#7a8e91] transition hover:bg-[#f3f6fb] hover:text-[#073f43]">
                 <UsersRound className="size-4" />
-              </Button>
+              </button>
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col overflow-hidden">
-            <div className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
-              {socketError ? (
-                <div className="rounded-md border border-destructive/20 bg-destructive/10 px-3 py-2 text-sm text-destructive">
-                  {socketError}
-                </div>
-              ) : null}
+          {/* Messages */}
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[#f8fafc] px-5 py-5">
+            {socketError ? (
+              <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {socketError}
+              </div>
+            ) : null}
 
-              {connectionState === "connecting" ? (
-                <p className="text-sm text-[#53676b]">Joining channel...</p>
-              ) : null}
+            {connectionState === "connecting" ? (
+              <div className="rounded-xl border border-[#d6dde3] bg-white px-4 py-3 text-sm text-[#7a8e91]">
+                Joining channel...
+              </div>
+            ) : null}
 
-              {messages.length ? (
-                messages.map((message) => {
-                  const isOwnMessage = message.sender_id === currentUserId;
-
+            {messages.length ? (
+              <div className="space-y-4">
+                {messages.map((message) => {
+                  const isOwn = message.sender_id === currentUserId;
                   return (
                     <div
                       key={message.id}
-                      className={`flex gap-3 ${
-                        isOwnMessage ? "justify-end" : "justify-start"
-                      }`}
+                      className={`flex items-end gap-3 ${isOwn ? "justify-end" : "justify-start"}`}
                     >
-                      {!isOwnMessage ? (
-                        <div className="flex size-9 shrink-0 items-center justify-center rounded-md bg-[#073f43] text-xs font-bold text-white">
-                          {message.sender.first_name[0]}
-                          {message.sender.last_name[0]}
-                        </div>
-                      ) : null}
+                      {!isOwn && (
+                        <Avatar
+                          initials={`${message.sender.first_name[0]}${message.sender.last_name[0]}`}
+                          size="sm"
+                        />
+                      )}
                       <div
-                        className={`max-w-[75%] rounded-md border px-3 py-2 ${
-                          isOwnMessage
-                            ? "border-[#073f43] bg-[#073f43] text-white"
-                            : "border-[#d6dde3] bg-[#f8fafc]"
+                        className={`max-w-[min(42rem,78%)] rounded-2xl px-4 py-3 shadow-sm ${
+                          isOwn
+                            ? "rounded-br-md bg-[#073f43] text-white"
+                            : "rounded-bl-md border border-[#e8eff6] bg-white text-[#101820]"
                         }`}
                       >
-                        <div className="flex items-baseline gap-2">
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
                           <p className="text-sm font-bold">
-                            {isOwnMessage
-                              ? "You"
-                              : `${message.sender.first_name} ${message.sender.last_name}`}
+                            {isOwn ? "You" : `${message.sender.first_name} ${message.sender.last_name}`}
                           </p>
-                          <span
-                            className={`text-xs ${
-                              isOwnMessage ? "text-white/70" : "text-[#53676b]"
-                            }`}
-                          >
+                          <span className={`text-xs ${isOwn ? "text-white/60" : "text-[#7a8e91]"}`}>
                             {formatMessageTime(message.created_at)}
                           </span>
                         </div>
-                        <p className="mt-1 whitespace-pre-wrap text-sm leading-6">
-                          {message.content}
-                        </p>
+                        <p className="mt-1 whitespace-pre-wrap text-sm leading-6">{message.content}</p>
                       </div>
                     </div>
                   );
-                })
-              ) : connectionState !== "connecting" ? (
-                <div className="flex h-full min-h-64 items-center justify-center text-center">
-                  <div className="max-w-sm">
-                    <MessageSquare className="mx-auto size-10 text-[#53676b]" />
-                    <h3 className="mt-4 text-lg font-semibold">No messages yet</h3>
-                    <p className="mt-2 text-sm leading-6 text-[#53676b]">
-                      Start the first discussion in this channel.
-                    </p>
-                  </div>
+                })}
+                <div ref={messagesEndRef} />
+              </div>
+            ) : connectionState !== "connecting" ? (
+              <div className="flex h-full min-h-72 items-center justify-center">
+                <div className="rounded-2xl border border-dashed border-[#c8d1d7] bg-white px-8 py-10 text-center">
+                  <MessageSquare className="mx-auto size-10 text-[#073f43]/40" />
+                  <h3 className="mt-4 text-base font-semibold text-[#101820]">No messages yet</h3>
+                  <p className="mt-2 text-sm leading-6 text-[#7a8e91]">
+                    Start the first discussion in this channel.
+                  </p>
                 </div>
-              ) : null}
-            </div>
+              </div>
+            ) : null}
           </div>
 
+          {/* Typing indicator */}
           {typingNames.length ? (
-            <div className="border-t border-[#d6dde3] px-4 py-2 text-xs font-medium text-[#53676b]">
+            <div className="border-t border-[#edf3fb] bg-white px-5 py-2 text-xs font-medium text-[#7a8e91]">
               {typingNames.length === 1
                 ? `${typingNames[0]} is typing...`
                 : `${typingNames.slice(0, 2).join(", ")} are typing...`}
             </div>
           ) : null}
 
-          <form className="border-t border-[#d6dde3] p-3" onSubmit={handleSendChannelMessage}>
-            <div className="flex items-center gap-2 rounded-md border border-[#b8c4c7] bg-white px-3 py-2">
-              <Plus className="size-4 text-[#53676b]" />
+          {/* Message input */}
+          <form className="border-t border-[#edf3fb] bg-white p-4" onSubmit={handleSendChannelMessage}>
+            <div className="flex items-center gap-3 rounded-2xl border border-[#d6dde3] bg-[#f8fafc] px-4 py-2.5 transition focus-within:border-[#073f43] focus-within:ring-2 focus-within:ring-[#073f43]/10">
               <input
-                className="flex-1 bg-transparent text-sm outline-none"
-                placeholder={`Message ${selectedChannel?.name ?? "channel"}`}
+                className="min-h-8 flex-1 bg-transparent text-sm outline-none placeholder:text-[#aab7ba]"
+                placeholder={`Message #${selectedChannel?.name ?? "channel"}`}
                 value={messageDraft}
-                onChange={(event) => handleMessageDraftChange(event.target.value)}
+                onChange={(e) => handleMessageDraftChange(e.target.value)}
                 disabled={!selectedChannel}
               />
-              <Button
-                size="icon-sm"
-                className="bg-[#073f43] text-white"
+              <button
+                type="submit"
                 disabled={!selectedChannel || !messageDraft.trim()}
+                className="flex size-8 shrink-0 items-center justify-center rounded-xl bg-[#073f43] text-white transition hover:bg-[#052c2f] disabled:cursor-not-allowed disabled:opacity-40"
               >
-                <Send className="size-4" />
-              </Button>
+                <Send className="size-3.5" />
+              </button>
             </div>
           </form>
         </section>
       </div>
-    </Card>
+    </div>
   );
 }
+
+// ─── Members Tab ──────────────────────────────────────────────────────────────
 
 function MembersTab({ groupId }: { groupId: number }) {
   const onlineUserIds = useOnlineUserIds();
@@ -919,105 +1074,105 @@ function MembersTab({ groupId }: { groupId: number }) {
   const members = membersQuery.data ?? EMPTY_MEMBERS;
 
   return (
-    <Card className="border-[#b8c4c7] bg-white">
-      <CardHeader className="p-5">
-        <h2 className="flex items-center gap-2 text-lg font-semibold">
-          <UsersRound className="size-5" />
+    <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-sm">
+      <div className="flex items-center justify-between border-b border-[#edf3fb] px-5 py-4">
+        <h2 className="flex items-center gap-2 text-base font-bold text-[#101820]">
+          <Users className="size-4 text-[#073f43]" />
           Members
         </h2>
-        <span className="rounded-full bg-[#edf3fb] px-2.5 py-1 text-xs font-bold">
+        <span className="rounded-full bg-[#073f43] px-2.5 py-0.5 text-xs font-bold text-white">
           {members.length}
         </span>
-      </CardHeader>
-      <CardContent className="grid gap-3 px-5 pb-5 sm:grid-cols-2">
+      </div>
+
+      <div className="grid gap-3 p-5 sm:grid-cols-2">
         {membersQuery.isLoading ? (
-          <p className="text-sm text-[#53676b]">Loading members...</p>
+          <p className="text-sm text-[#7a8e91]">Loading members...</p>
         ) : members.length ? (
           members.map((member) => {
             const isOnline = onlineUserIds.has(member.user_id);
-
             return (
               <div
                 key={member.user_id}
-                className="flex items-center gap-3 rounded-md border border-[#d6dde3] p-3"
+                className="flex items-center gap-3 rounded-xl border border-[#edf3fb] bg-[#f8fafc] p-3 transition hover:border-[#d6dde3] hover:bg-white"
               >
                 <div className="relative">
-                  <div className="flex size-10 items-center justify-center rounded-full bg-[#0b5557] text-xs font-bold text-white">
-                    {member.user.first_name[0]}
-                    {member.user.last_name[0]}
-                  </div>
+                  <Avatar initials={`${member.user.first_name[0]}${member.user.last_name[0]}`} />
                   <span
                     aria-label={isOnline ? "Online" : "Offline"}
-                    className={`absolute -bottom-0.5 -right-0.5 size-3.5 rounded-full border-2 border-white ${
-                      isOnline ? "bg-emerald-500" : "bg-[#9ca3af]"
+                    className={`absolute -bottom-0.5 -right-0.5 size-3 rounded-full border-2 border-white ${
+                      isOnline ? "bg-emerald-500" : "bg-[#c8d1d7]"
                     }`}
-                    title={isOnline ? "Online" : "Offline"}
                   />
                 </div>
-                <div>
-                  <p className="text-sm font-bold">
+                <div className="min-w-0">
+                  <p className="truncate text-sm font-semibold text-[#101820]">
                     {member.user.first_name} {member.user.last_name}
                   </p>
-                  <p className="text-xs text-[#53676b]">
-                    {member.role ?? "member"} - {isOnline ? "online" : "offline"}
-                  </p>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-[#7a8e91]">{member.role ?? "member"}</span>
+                    <span className="text-[#c8d1d7]">·</span>
+                    <span className={`text-xs font-semibold ${isOnline ? "text-emerald-600" : "text-[#aab7ba]"}`}>
+                      {isOnline ? "online" : "offline"}
+                    </span>
+                  </div>
                 </div>
               </div>
             );
           })
         ) : (
-          <p className="text-sm text-[#53676b]">No members found.</p>
+          <p className="text-sm text-[#7a8e91]">No members found.</p>
         )}
-      </CardContent>
-    </Card>
-  );
-}
-
-function AboutTab({ group }: { group: Group }) {
-  return (
-    <div className="grid gap-4 md:grid-cols-[1fr_18rem]">
-      <Card className="border-[#b8c4c7] bg-white">
-        <CardHeader className="p-5">
-          <h2 className="flex items-center gap-2 text-lg font-semibold">
-            <Info className="size-5" />
-            About {group.name}
-          </h2>
-        </CardHeader>
-        <CardContent className="space-y-4 px-5 pb-5">
-          <p className="text-sm leading-7 text-[#1f2937]">
-            {getGroupDescription(group)}
-          </p>
-          <div className="rounded-md bg-[#edf3fb] p-4">
-            <p className="text-xs font-bold uppercase text-[#53676b]">
-              Community focus
-            </p>
-            <p className="mt-2 text-sm">
-              Resource sharing, course collaboration, academic discussion, and
-              project coordination.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="border-[#b8c4c7] bg-white">
-        <CardContent className="space-y-4 p-5">
-          <div>
-            <p className="text-xs font-bold uppercase text-[#53676b]">Created</p>
-            <p className="mt-1 text-sm font-semibold">{formatDate(group.created_at)}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase text-[#53676b]">Visibility</p>
-            <p className="mt-1 text-sm font-semibold">{group.visibility ?? "public"}</p>
-          </div>
-          <div>
-            <p className="text-xs font-bold uppercase text-[#53676b]">Owner ID</p>
-            <p className="mt-1 text-sm font-semibold">{group.owner_id}</p>
-          </div>
-        </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
+
+// ─── About Tab ────────────────────────────────────────────────────────────────
+
+function AboutTab({ group }: { group: Group }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-[1fr_17rem]">
+      <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-sm">
+        <div className="border-b border-[#edf3fb] px-5 py-4">
+          <h2 className="flex items-center gap-2 text-base font-bold text-[#101820]">
+            <Info className="size-4 text-[#073f43]" />
+            About {group.name}
+          </h2>
+        </div>
+        <div className="space-y-4 p-5">
+          <p className="text-sm leading-7 text-[#1f2937]">{getGroupDescription(group)}</p>
+          <div className="rounded-xl bg-[#f3f6fb] p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[#7a8e91]">Community focus</p>
+            <p className="mt-2 text-sm leading-6 text-[#3d5156]">
+              Resource sharing, course collaboration, academic discussion, and project coordination.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-sm">
+        <div className="border-b border-[#edf3fb] px-5 py-4">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-[#7a8e91]">Details</h2>
+        </div>
+        <div className="divide-y divide-[#f3f6fb]">
+          {[
+            { label: "Created",    value: formatDate(group.created_at) },
+            { label: "Visibility", value: group.visibility ?? "public" },
+            { label: "Owner ID",   value: String(group.owner_id) },
+          ].map(({ label, value }) => (
+            <div key={label} className="px-5 py-3.5">
+              <p className="text-xs font-bold uppercase tracking-wide text-[#7a8e91]">{label}</p>
+              <p className="mt-1 text-sm font-semibold text-[#101820]">{value}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Selected Group View ──────────────────────────────────────────────────────
 
 function SelectedGroupView({
   group,
@@ -1028,36 +1183,46 @@ function SelectedGroupView({
   activeTab: GroupTab;
   onTabChange: (tab: GroupTab) => void;
 }) {
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
   return (
     <div className="space-y-4">
-      <GroupHero group={group} activeTab={activeTab} onTabChange={onTabChange} />
+      <GroupHero
+        group={group}
+        activeTab={activeTab}
+        onTabChange={onTabChange}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+      />
 
-      {activeTab === "feed" ? <FeedTab groupId={group.id} /> : null}
-      {activeTab === "channels" ? <ChannelsTab group={group} /> : null}
-      {activeTab === "members" ? <MembersTab groupId={group.id} /> : null}
-      {activeTab === "about" ? <AboutTab group={group} /> : null}
+      {activeTab === "feed"     && <FeedTab groupId={group.id} />}
+      {activeTab === "channels" && <ChannelsTab group={group} />}
+      {activeTab === "members"  && <MembersTab groupId={group.id} />}
+      {activeTab === "about"    && <AboutTab group={group} />}
+
+      {isSettingsOpen && (
+        <GroupSettingsModal group={group} onClose={() => setIsSettingsOpen(false)} />
+      )}
     </div>
   );
 }
 
+// ─── Right Rail ───────────────────────────────────────────────────────────────
+
 function CreateGroupCompactCard() {
   return (
-    <Card className="border-[#b8c4c7] bg-white">
-      <CardContent className="p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex size-10 shrink-0 items-center justify-center rounded-md bg-[#ffc85c] text-[#6b4a05]">
-            <Plus className="size-5" />
-          </div>
-          <div>
-            <h2 className="text-sm font-bold">Create a new group</h2>
-            <p className="mt-1 text-xs leading-5 text-[#53676b]">
-              Start a new class, research, or project community from the empty
-              state when you are not part of any groups.
-            </p>
-          </div>
+    <div className="overflow-hidden rounded-2xl border border-dashed border-[#c8d1d7] bg-white p-4 transition hover:border-[#073f43]/40 hover:shadow-sm">
+      <div className="flex items-start gap-3">
+        <div className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-[#ffc85c]">
+          <Plus className="size-4 text-[#6b4a05]" />
         </div>
-      </CardContent>
-    </Card>
+        <div>
+          <h3 className="text-sm font-bold text-[#101820]">Create a new group</h3>
+          <p className="mt-1 text-xs leading-5 text-[#7a8e91]">
+            Start a class, research team, or project community.
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -1071,7 +1236,7 @@ function RightRail({
   onSelectGroup: (groupId: number) => void;
 }) {
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <GroupList
         memberships={memberships}
         selectedGroupId={selectedGroupId}
@@ -1082,30 +1247,31 @@ function RightRail({
   );
 }
 
+// ─── Page ─────────────────────────────────────────────────────────────────────
+
 export function MyGroupsPage() {
   const [selectedGroupId, setSelectedGroupId] = useState<number | undefined>();
   const [activeTab, setActiveTab] = useState<GroupTab>("channels");
+
   const myGroupsQuery = useQuery({
     queryKey: ["groups", "my"],
     queryFn: groupsApi.getMyGroups,
     retry: false,
   });
+
   const memberships = myGroupsQuery.data ?? EMPTY_MEMBERSHIPS;
-  const selectedMembership = useMemo(() => {
-    return (
-      memberships.find((membership) => membership.group.id === selectedGroupId) ??
-      memberships[0]
-    );
-  }, [memberships, selectedGroupId]);
+
+  const selectedMembership = useMemo(
+    () => memberships.find((m) => m.group.id === selectedGroupId) ?? memberships[0],
+    [memberships, selectedGroupId]
+  );
 
   if (myGroupsQuery.isLoading) {
     return (
       <AppShell activeItem="My Groups">
-        <Card className="border-[#b8c4c7] bg-white">
-          <CardContent className="p-5 text-sm text-[#53676b]">
-            Loading your groups...
-          </CardContent>
-        </Card>
+        <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white p-5 shadow-sm">
+          <p className="text-sm text-[#7a8e91]">Loading your groups...</p>
+        </div>
       </AppShell>
     );
   }
@@ -1132,7 +1298,7 @@ export function MyGroupsPage() {
         />
       }
     >
-      <div className="mx-auto max-w-[58rem]">
+      <div className="mx-auto w-full max-w-[58rem] py-4">
         {selectedMembership ? (
           <SelectedGroupView
             group={selectedMembership.group}
