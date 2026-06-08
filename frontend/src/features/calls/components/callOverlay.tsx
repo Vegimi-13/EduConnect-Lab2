@@ -197,7 +197,6 @@ export default function CallOverlay({
   // ── Connect ──────────────────────────────────────────────────────────────
   useEffect(() => {
     const room = new Room({ adaptiveStream: true, dynacast: true });
-    let shouldHandleDisconnect = true;
     let isMounted = true;
     roomRef.current = room;
 
@@ -227,9 +226,7 @@ export default function CallOverlay({
         room.remoteParticipants.forEach((p) => syncParticipant(p));
       })
       .on(RoomEvent.Disconnected, () => {
-        if (!shouldHandleDisconnect) return;
         setConnected(false);
-        onEndRef.current();
       });
 
     room.connect(wsUrl, token)
@@ -244,13 +241,18 @@ export default function CallOverlay({
         syncParticipant(room.localParticipant);
       })
       .catch((error) => {
+        if (!isMounted) return;
+
+        const message = error instanceof Error ? error.message : String(error);
+        if (message.toLowerCase().includes("client initiated disconnect")) {
+          return;
+        }
+
         console.error("Failed to connect to LiveKit room:", error);
-        if (isMounted) onEndRef.current();
       });
 
     return () => {
       isMounted = false;
-      shouldHandleDisconnect = false;
       if (roomRef.current === room) {
         roomRef.current = null;
       }
@@ -316,7 +318,7 @@ export default function CallOverlay({
     const room = roomRef.current;
     roomRef.current = null;
     room?.disconnect();
-    onEnd();
+    onEndRef.current();
   };
 
   const tiles = Array.from(participants.values());
