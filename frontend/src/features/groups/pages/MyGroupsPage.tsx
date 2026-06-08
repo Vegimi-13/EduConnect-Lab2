@@ -30,6 +30,7 @@ import type { FeedPost } from "@/features/feed/types/feed.types";
 import { cloudinaryApi } from "@/lib/cloudinary";
 import { getSocket } from "@/lib/socket";
 import { groupsApi } from "../../groups/api/groupsApi";
+import { Avatar } from "../components/Avatar";
 import type {
   ChannelJoinedPayload,
   ChannelMessage,
@@ -139,26 +140,7 @@ function useOnlineUserIds() {
   return onlineUserIds;
 }
 
-// ─── Shared UI atoms ──────────────────────────────────────────────────────────
 
-function Avatar({
-  initials,
-  size = "md",
-  className = "",
-}: {
-  initials: string;
-  size?: "sm" | "md" | "lg";
-  className?: string;
-}) {
-  const sizes = { sm: "size-8 text-xs", md: "size-10 text-sm", lg: "size-14 text-base" };
-  return (
-    <div
-      className={`flex shrink-0 items-center justify-center rounded-xl bg-[#073f43] font-bold text-white ${sizes[size]} ${className}`}
-    >
-      {initials}
-    </div>
-  );
-}
 
 // ─── Empty State ──────────────────────────────────────────────────────────────
 
