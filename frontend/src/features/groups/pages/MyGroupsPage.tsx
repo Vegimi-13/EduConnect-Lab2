@@ -34,6 +34,7 @@ import { Avatar } from "../components/Avatar";
 import { useOnlineUserIds } from "../hooks/useOnlineUserIds";
 import { EmptyGroupsState } from "../components/EmptyGroupsState";
 import { GroupList } from "../components/GroupList";
+import { GroupHero } from "../components/GroupHero";
 import type {
   ChannelJoinedPayload,
   ChannelMessage,
@@ -110,81 +111,7 @@ function getGroupDescription(group: Group) {
 }
 
 
-// ─── Group Hero ───────────────────────────────────────────────────────────────
 
-function GroupHero({
-  group,
-  activeTab,
-  onTabChange,
-  onOpenSettings,
-}: {
-  group: Group;
-  activeTab: GroupTab;
-  onTabChange: (tab: GroupTab) => void;
-  onOpenSettings: () => void;
-}) {
-  return (
-    <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-sm">
-      {/* Banner */}
-      <div className="relative overflow-hidden bg-[#073f43] px-6 py-6 text-white">
-        <div className="absolute -right-8 -top-8 size-40 rounded-full bg-white/5" />
-        <div className="absolute -bottom-6 right-32 size-24 rounded-full bg-white/5" />
-
-        <div className="relative flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div className="flex min-w-0 items-center gap-4">
-            <div className="flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/10 text-lg font-bold">
-              {getInitials(group.name)}
-            </div>
-            <div className="min-w-0">
-              <h1 className="truncate text-xl font-bold tracking-tight">{group.name}</h1>
-              <p className="mt-1 line-clamp-1 text-sm text-white/65">
-                {getGroupDescription(group)}
-              </p>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="flex items-center gap-1.5 rounded-lg border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold">
-              <Check className="size-3.5" />
-              Joined
-            </div>
-            <button
-              type="button"
-              aria-label="Group settings"
-              onClick={onOpenSettings}
-              className="flex size-8 items-center justify-center rounded-lg border border-white/20 bg-white/10 transition hover:bg-white/20"
-            >
-              <Settings className="size-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Tab bar */}
-      <div className="flex overflow-x-auto px-2">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.value;
-          return (
-            <button
-              key={tab.value}
-              type="button"
-              onClick={() => onTabChange(tab.value)}
-              className={`flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition ${
-                isActive
-                  ? "border-[#073f43] text-[#073f43]"
-                  : "border-transparent text-[#7a8e91] hover:text-[#3d5156]"
-              }`}
-            >
-              <Icon className="size-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ─── Group Settings Modal ─────────────────────────────────────────────────────
 
@@ -770,8 +697,8 @@ function ChannelsTab({ group }: { group: Group }) {
 
   return (
     <div className="overflow-hidden rounded-2xl border border-[#d6dde3] bg-white shadow-sm">
-      <div className="grid min-h-[36rem] lg:grid-cols-[13rem_minmax(0,1fr)]">
-        {/* Channel sidebar */}
+      <div className="grid h-[calc(100dvh-14rem)] min-h-[36rem] overflow-hidden lg:grid-cols-[13rem_minmax(0,1fr)]"> 
+             {/* Channel sidebar */}
         <aside className="flex flex-col border-r border-[#edf3fb] bg-[#f8fafc]">
           <div className="border-b border-[#edf3fb] px-4 py-4">
             <p className="text-xs font-bold uppercase tracking-wider text-[#7a8e91]">Channels</p>
