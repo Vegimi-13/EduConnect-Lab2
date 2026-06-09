@@ -147,10 +147,7 @@ export function AppShell({
 
   // Grid template: sidebar width changes between expanded (15rem) and collapsed (3.5rem)
   const sidebarWidth = collapsed ? "3.5rem" : "15rem";
-  const gridCols = rightRail
-    ? `${sidebarWidth} minmax(0,1fr) 23rem`
-    : `${sidebarWidth} minmax(0,1fr)`;
-
+  
   return (
     <main className="h-dvh overflow-hidden bg-[#f3f6fb] text-[#101820]">
 

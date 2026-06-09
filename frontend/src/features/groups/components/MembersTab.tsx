@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+﻿import { useQuery } from "@tanstack/react-query";
 import { Users } from "lucide-react";
 
 import { groupsApi } from "../api/groupsApi";
@@ -56,7 +56,7 @@ export function MembersTab({ groupId }: { groupId: number }) {
                   </p>
                   <div className="mt-0.5 flex items-center gap-2">
                     <span className="text-xs text-[#7a8e91]">{member.role ?? "member"}</span>
-                    <span className="text-[#c8d1d7]">�</span>
+                    <span className="text-[#c8d1d7]">·</span>
                     <span className={`text-xs font-semibold ${isOnline ? "text-emerald-600" : "text-[#aab7ba]"}`}>
                       {isOnline ? "online" : "offline"}
                     </span>
@@ -72,3 +72,4 @@ export function MembersTab({ groupId }: { groupId: number }) {
     </div>
   );
 }
+

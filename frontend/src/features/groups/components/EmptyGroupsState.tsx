@@ -1,4 +1,4 @@
-import type { FormEvent } from "react";
+﻿import type { FormEvent } from "react";
 import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Globe, Hash, Lock, Plus, Users, UsersRound, Zap } from "lucide-react";
@@ -68,7 +68,7 @@ export function EmptyGroupsState() {
                 { icon: Users, text: "Collaborate with classmates and lab partners" },
                 { icon: Hash, text: "Focused channels for each topic or project" },
                 { icon: Zap, text: "Real-time chat and group-level post feed" },
-                { icon: Globe, text: "Public or private � you control access" },
+                { icon: Globe, text: "Public or private — you control access" },
               ].map(({ icon: Icon, text }) => (
                 <li key={text} className="flex items-start gap-3">
                   <div className="mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg bg-[#edf3fb]">
@@ -151,3 +151,4 @@ export function EmptyGroupsState() {
     </div>
   );
 }
+

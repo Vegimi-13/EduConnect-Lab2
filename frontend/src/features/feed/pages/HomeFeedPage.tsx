@@ -21,7 +21,6 @@ import { Link, useSearchParams } from "react-router-dom";
 
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { cloudinaryApi } from "@/lib/cloudinary";
 import { useFeedStore } from "../store/feedStore";
 import type { FeedComment, FeedPost, FeedScope } from "../types/feed.types";
