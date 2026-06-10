@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ChevronRight, Hash, MessageSquare, Search, Send, UsersRound } from "lucide-react";
 
 import { useAuthStore } from "@/features/auth/store/authStore";
+import { profileApi } from "@/features/profile/api/profileApi";
 import { getSocket } from "@/lib/socket";
 
 import { groupsApi } from "../api/groupsApi";
@@ -45,7 +46,7 @@ function formatMessageTime(date: string) {
 export function ChannelsTab({ group }: { group: Group }) {
   const groupId = group.id;
   const currentUser = useAuthStore((state) => state.user);
-  const currentUserId = useAuthStore((state) => state.user?.id);
+  const storeUserId = useAuthStore((state) => state.user?.id);
   const typingTimeoutRef = useRef<number | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const [selectedChannelId, setSelectedChannelId] = useState<number | null>(null);
@@ -65,9 +66,16 @@ export function ChannelsTab({ group }: { group: Group }) {
     queryFn: () => groupsApi.getGroupMembers(groupId),
     retry: false,
   });
+  const myProfileQuery = useQuery({
+    queryKey: ["profile", "me"],
+    queryFn: profileApi.getMyProfile,
+    retry: false,
+    enabled: storeUserId === undefined,
+  });
 
   const channels = channelsQuery.data ?? EMPTY_CHANNELS;
   const members = membersQuery.data ?? EMPTY_MEMBERS;
+  const currentUserId = storeUserId ?? myProfileQuery.data?.user_id;
 
   const selectedChannel = useMemo<GroupChannel | undefined>(
     () => channels.find((c) => c.id === selectedChannelId) ?? channels[0],
@@ -87,7 +95,7 @@ export function ChannelsTab({ group }: { group: Group }) {
     [currentUserId, memberNameById, typingUserIds]
   );
 
-  const currentUserLabel = currentUser?.email ?? "Signed-in user";
+  const currentUserLabel = currentUser?.email ?? myProfileQuery.data?.email ?? "Signed-in user";
   const currentUserInitials = getInitials(currentUserLabel) || "U";
 
   // Scroll to bottom when messages change

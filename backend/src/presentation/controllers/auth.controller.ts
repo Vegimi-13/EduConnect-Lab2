@@ -61,10 +61,14 @@ const authController = {
         try {
             const ip = req.ip || req.headers['x-forwarded-for'] || req.socket.remoteAddress || '';
             const result = await authService.refresh(req.cookies.refreshToken);
+            const cleanedResult = {
+                user: result.user,
+                accessToken: result.accessToken,
+            };
             res.cookie('refreshToken', result.refreshToken, { ...cookieOptions, maxAge: 7 * 24 * 60 * 60 * 1000 }); 
             res.cookie('accessToken', result.accessToken, { ...cookieOptions, maxAge: 15 * 60 * 1000 })
         
-            res.status(200).json({ message: 'Token refreshed successfully' });
+            res.status(200).json(cleanedResult);
         } catch (error) {
             next(error);
         }

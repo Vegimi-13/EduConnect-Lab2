@@ -478,6 +478,7 @@ export function MessagesPage() {
     myId === null
       ? []
       : conversations.filter((conv) => {
+          if (conv.type !== "private") return false;
           const other = getOtherParticipant(conv, myId);
           const name = other ? `${other.first_name} ${other.last_name}` : conv.name ?? "";
           return name.toLowerCase().includes(search.toLowerCase());

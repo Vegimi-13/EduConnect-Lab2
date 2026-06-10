@@ -87,7 +87,7 @@ async function logout() {
 
 async function refreshSession() {
   try {
-    const { data } = await api.post<AuthMessageResponse>(
+    const { data } = await api.post<AuthResponse>(
       `${AUTH_BASE_PATH}/refresh`
     );
 

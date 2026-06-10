@@ -175,6 +175,10 @@ const authService = {
         });
 
         return {
+            user: {
+                id: user.id,
+                email: user.email,
+            },
             accessToken: newAccessToken,
             refreshToken: newRefreshToken,
         };

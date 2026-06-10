@@ -58,6 +58,10 @@ export function MyGroupsPage() {
             setSelectedGroupId(groupId);
             setActiveTab("channels");
           }}
+          onGroupCreated={(group) => {
+            setSelectedGroupId(group.id);
+            setActiveTab("channels");
+          }}
         />
       }
     >

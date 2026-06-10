@@ -53,7 +53,7 @@ async function getMutualFollows(): Promise<MutualUser[]> {
 
 async function getConversations(): Promise<Conversation[]> {
   const { data } = await api.get<Conversation[]>("/conversations");
-  return data;
+  return data.filter((conversation) => conversation.type === "private");
 }
 
 async function getMessages(conversationId: number): Promise<Message[]> {
